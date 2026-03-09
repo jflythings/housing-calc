@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Rent vs Buy: Path to Sacramento</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0c0f;
+  --surface:#13151a;
+  --border:#1e2229;
+  --border2:#262b34;
+  --text:#c9d4e0;
+  --muted:#4a5568;
+  --muted2:#2d3748;
+  --gold:#c9a84c;
+  --gold-dim:#3d2e10;
+  --green:#4caf82;
+  --green-dim:#1a3d2e;
+  --red:#d05a5a;
+  --red-dim:#3d1a1a;
+  --blue:#6b9fd4;
+  --blue-dim:#1a2d3d;
+  --orange:#d4924c;
+  --orange-dim:#3d2410;
+  --purple:#a78bfa;
+  --purple-dim:#2d1f4a;
+  --mono:'DM Mono',monospace;
+  --serif:'Cormorant Garamond',serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:100vh}
+input[type=range]{width:100%;accent-color:var(--gold);cursor:pointer}
+
+.header{background:linear-gradient(180deg,#0f1117 0%,var(--bg) 100%);border-bottom:1px solid var(--border2);padding:32px 40px 24px}
+.header-inner{max-width:1500px;margin:0 auto}
+.eyebrow{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.title{font-family:var(--serif);font-size:38px;font-weight:700;color:#e8dcc8;letter-spacing:-.01em;line-height:1.1}
+.subtitle{font-size:12px;color:var(--muted);margin-top:6px;font-style:italic}
+
+.main{max-width:1500px;margin:0 auto;padding:32px 40px}
+
+.inputs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.input-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px}
+.input-card-title{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+.slider-row{margin-bottom:16px}
+.slider-label-row{display:flex;justify-content:space-between;margin-bottom:4px;align-items:baseline}
+.slider-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.slider-val{font-size:12px;font-weight:500;color:var(--gold)}
+.slider-hint{font-size:10px;color:var(--muted2);margin-top:2px;font-style:italic}
+.divider{border:none;border-top:1px solid var(--border);margin:12px 0}
+
+.scenarios{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+.scenario{border-radius:12px;overflow:hidden}
+.scenario-header{padding:16px 18px 12px}
+.scenario-badge{font-size:9px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:5px}
+.scenario-title{font-family:var(--serif);font-size:20px;font-weight:700;line-height:1.2}
+.scenario-sub{font-size:10px;margin-top:3px;opacity:.7}
+
+.s-rent .scenario-header{background:linear-gradient(135deg,#1a1f2e,#13151a);border-bottom:1px solid var(--blue-dim)}
+.s-rent .scenario-badge{color:var(--blue)}
+.s-rent .scenario-title{color:#8bb8e8}
+
+.s-renttx .scenario-header{background:linear-gradient(135deg,#221a10,#13151a);border-bottom:1px solid var(--orange-dim)}
+.s-renttx .scenario-badge{color:var(--orange)}
+.s-renttx .scenario-title{color:#e0a870}
+
+.s-growth .scenario-header{background:linear-gradient(135deg,#1a1f1a,#13151a);border-bottom:1px solid var(--green-dim)}
+.s-growth .scenario-badge{color:var(--green)}
+.s-growth .scenario-title{color:#7cca9f}
+
+.s-afford .scenario-header{background:linear-gradient(135deg,#1f1c2e,#13151a);border-bottom:1px solid var(--purple-dim)}
+.s-afford .scenario-badge{color:var(--purple)}
+.s-afford .scenario-title{color:#c4b5fd}
+
+.scenario-body{background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;padding:0}
+.section-label{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted2);padding:12px 16px 7px;border-top:1px solid var(--border)}
+.section-label:first-child{border-top:none}
+.line{display:flex;justify-content:space-between;align-items:baseline;padding:4px 16px}
+.line-key{font-size:10.5px;color:var(--muted);flex:1;padding-right:8px}
+.line-val{font-size:11.5px;font-weight:500;color:var(--text);white-space:nowrap}
+.line-val.neg{color:var(--red)}
+.line-val.pos{color:var(--green)}
+.line-val.gold{color:var(--gold)}
+.line.total{background:rgba(255,255,255,.03);border-top:1px solid var(--border);margin-top:4px;padding:9px 16px}
+.line.total .line-key{font-size:11px;color:var(--text);font-weight:500}
+.line.total .line-val{font-size:13px;font-weight:700}
+
+.insight-bar{border-radius:8px;padding:14px 20px;margin-bottom:22px;font-size:11px;line-height:1.6;border:1px solid var(--border2)}
+.insight-bar strong{color:var(--gold)}
+
+.winner-banner{border-radius:12px;padding:18px 24px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.winner-left .winner-eyebrow{font-size:9px;letter-spacing:.2em;color:var(--muted);margin-bottom:5px}
+.winner-left .winner-title{font-family:var(--serif);font-size:26px;font-weight:700}
+.winner-left .winner-note{font-size:11px;color:var(--muted);margin-top:3px}
+.winner-stats{display:flex;gap:20px}
+.winner-stat{text-align:center}
+.winner-stat-val{font-size:16px;font-weight:700;font-family:var(--serif)}
+.winner-stat-label{font-size:9px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.08em}
+
+.sac-panel{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:22px 26px;margin-bottom:22px}
+.sac-title{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+.sac-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.sac-card{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.sac-card-title{font-size:10px;color:var(--muted);margin-bottom:7px}
+.sac-card-val{font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px;font-family:var(--serif)}
+.sac-bar-bg{height:5px;background:var(--border2);border-radius:3px;margin-top:7px;overflow:hidden}
+.sac-bar-fill{height:100%;border-radius:3px;transition:width .4s ease}
+.sac-check{font-size:10.5px;margin-top:5px}
+
+.assumptions{font-size:10px;color:var(--muted2);text-align:center;padding:14px;border:1px solid var(--border);border-radius:8px;line-height:1.7;font-style:italic}
+
+@media(max-width:1100px){
+  .inputs-grid{grid-template-columns:repeat(2,1fr)}
+  .scenarios{grid-template-columns:repeat(2,1fr)}
+  .sac-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:700px){
+  .inputs-grid,.scenarios,.sac-grid{grid-template-columns:1fr}
+  .main,.header{padding:18px}
+  .winner-banner{flex-direction:column}
+  .winner-stats{justify-content:center;flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="eyebrow">Path to Sacramento — Financial Strategy Analysis</div>
+    <h1 class="title">Rent CA &nbsp;·&nbsp; Rent TX &nbsp;·&nbsp; Buy Growth Market &nbsp;·&nbsp; Buy Affordable Market</h1>
+    <p class="subtitle">Does buying in a low-appreciation market trap you with low equity — or does the lower price free up enough savings to compensate?</p>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- INPUTS -->
+  <div class="inputs-grid">
+
+    <!-- CARD 1: FINANCES -->
+    <div class="input-card">
+      <div class="input-card-title">💰 Finances</div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Annual Income</span><span class="slider-val" id="v-income">$90,000</span></div>
+        <input type="range" id="s-income" min="60000" max="200000" step="5000" value="90000" oninput="update()"/>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Current Savings</span><span class="slider-val" id="v-savings">$45,000</span></div>
+        <input type="range" id="s-savings" min="10000" max="150000" step="5000" value="45000" oninput="update()"/>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Monthly Living Expenses</span><span class="slider-val" id="v-living">$2,500</span></div>
+        <input type="range" id="s-living" min="1500" max="5000" step="100" value="2500" oninput="update()"/>
+        <div class="slider-hint">Food, car, childcare, etc.</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Savings Yield (HYSA/MMF)</span><span class="slider-val" id="v-yield">3.00%</span></div>
+        <input type="range" id="s-yield" min="0" max="6" step="0.25" value="3" oninput="update()"/>
+        <div class="slider-hint">SPAXX ~3.32%, HYSAs ~3.5–4%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Mortgage Rate</span><span class="slider-val" id="v-convrate">6.750%</span></div>
+        <input type="range" id="s-convrate" min="4" max="10" step="0.125" value="6.75" oninput="update()"/>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Years Before Sacramento</span><span class="slider-val" id="v-years">5 years</span></div>
+        <input type="range" id="s-years" min="1" max="10" step="1" value="5" oninput="update()"/>
+      </div>
+    </div>
+
+    <!-- CARD 2: RENTING -->
+    <div class="input-card">
+      <div class="input-card-title">🏠 Renting</div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">CA Apt. Monthly Rent</span><span class="slider-val" id="v-rent">$2,200</span></div>
+        <input type="range" id="s-rent" min="1200" max="4000" step="50" value="2200" oninput="update()"/>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">CA Apt. Sq Ft</span><span class="slider-val" id="v-sqft-ca">800 sqft → <span id="v-util-ca">—</span>/mo</span></div>
+        <input type="range" id="s-sqft-ca" min="400" max="2000" step="50" value="800" oninput="update()"/>
+        <div class="slider-hint">~$0.14/sqft/mo · mild climate</div>
+      </div>
+      <hr class="divider"/>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">TX House Monthly Rent</span><span class="slider-val" id="v-renttx">$1,500</span></div>
+        <input type="range" id="s-renttx" min="800" max="3000" step="50" value="1500" oninput="update()"/>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">TX House Sq Ft</span><span class="slider-val" id="v-sqft-tx">1,200 sqft → <span id="v-util-tx">—</span>/mo</span></div>
+        <input type="range" id="s-sqft-tx" min="400" max="3000" step="50" value="1200" oninput="update()"/>
+        <div class="slider-hint">~$0.19/sqft/mo · AC-heavy summers</div>
+      </div>
+      <hr class="divider"/>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Annual Rent Inflation</span><span class="slider-val" id="v-rentinfl">3.0%</span></div>
+        <input type="range" id="s-rentinfl" min="0" max="8" step="0.5" value="3" oninput="update()"/>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Sacramento Target Price</span><span class="slider-val" id="v-sacprice">$550,000</span></div>
+        <input type="range" id="s-sacprice" min="300000" max="900000" step="10000" value="550000" oninput="update()"/>
+      </div>
+    </div>
+
+    <!-- CARD 3: GROWTH MARKET BUY -->
+    <div class="input-card">
+      <div class="input-card-title">📈 Buy — Growth Market (Scenario C)</div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Purchase Price</span><span class="slider-val" id="v-gprice">$325,000</span></div>
+        <input type="range" id="s-gprice" min="150000" max="600000" step="5000" value="325000" oninput="update()"/>
+        <div class="slider-hint">e.g. Charlotte NC, Indianapolis</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Annual Appreciation</span><span class="slider-val" id="v-gappr">5.0%</span></div>
+        <input type="range" id="s-gappr" min="0" max="10" step="0.5" value="5" oninput="update()"/>
+        <div class="slider-hint">Above average growth market</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Property Tax / Month</span><span class="slider-val" id="v-gtax">$205</span></div>
+        <input type="range" id="s-gtax" min="50" max="1500" step="5" value="205" oninput="update()"/>
+        <div class="slider-hint">Use actual listing tax bill</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Annual Tax Growth</span><span class="slider-val" id="v-gtaxgrowth">4.0%</span></div>
+        <input type="range" id="s-gtaxgrowth" min="0" max="10" step="0.5" value="4" oninput="update()"/>
+        <div class="slider-hint">Reassess market value ~4–5% · Prop 13 cap ~2% · Frozen base ~1%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">State Income Tax</span><span class="slider-val" id="v-gtaxincome">4.50%</span></div>
+        <input type="range" id="s-gtaxincome" min="0" max="10" step="0.1" value="4.5" oninput="update()"/>
+        <div class="slider-hint">NC flat 4.5% · TX = 0%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Home Sq Ft</span><span class="slider-val" id="v-sqft-g">1,450 sqft → <span id="v-util-g">—</span>/mo</span></div>
+        <input type="range" id="s-sqft-g" min="400" max="3000" step="50" value="1450" oninput="update()"/>
+        <div class="slider-hint">~$0.18/sqft/mo · heat pump climate</div>
+      </div>
+    </div>
+
+    <!-- CARD 4: AFFORDABLE MARKET BUY -->
+    <div class="input-card">
+      <div class="input-card-title">🏷️ Buy — Affordable Market (Scenario D)</div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Purchase Price</span><span class="slider-val" id="v-aprice">$215,000</span></div>
+        <input type="range" id="s-aprice" min="100000" max="400000" step="5000" value="215000" oninput="update()"/>
+        <div class="slider-hint">e.g. Wyoming PA, Nanticoke PA</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Annual Appreciation</span><span class="slider-val" id="v-aappr">2.5%</span></div>
+        <input type="range" id="s-aappr" min="0" max="10" step="0.5" value="2.5" oninput="update()"/>
+        <div class="slider-hint">Below average / stable market</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Property Tax / Month</span><span class="slider-val" id="v-atax">$221</span></div>
+        <input type="range" id="s-atax" min="50" max="1500" step="5" value="221" oninput="update()"/>
+        <div class="slider-hint">Use actual listing tax bill</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Annual Tax Growth</span><span class="slider-val" id="v-ataxgrowth">1.0%</span></div>
+        <input type="range" id="s-ataxgrowth" min="0" max="10" step="0.5" value="1" oninput="update()"/>
+        <div class="slider-hint">Reassess market value ~4–5% · Prop 13 cap ~2% · Frozen base ~1%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">State Income Tax</span><span class="slider-val" id="v-ataxincome">3.07%</span></div>
+        <input type="range" id="s-ataxincome" min="0" max="10" step="0.1" value="3.07" oninput="update()"/>
+        <div class="slider-hint">PA flat 3.07%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Home Sq Ft</span><span class="slider-val" id="v-sqft-a">1,184 sqft → <span id="v-util-a">—</span>/mo</span></div>
+        <input type="range" id="s-sqft-a" min="400" max="3000" step="50" value="1184" oninput="update()"/>
+        <div class="slider-hint">~$0.22/sqft/mo · natural gas heat</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- INSIGHT BAR -->
+  <div class="insight-bar" id="insight-bar">—</div>
+
+  <!-- WINNER BANNER -->
+  <div class="winner-banner" id="winner-banner">
+    <div class="winner-left">
+      <div class="winner-eyebrow" id="winner-eyebrow">BEST PATH TO SACRAMENTO</div>
+      <div class="winner-title" id="winner-title">—</div>
+      <div class="winner-note" id="winner-note">—</div>
+    </div>
+    <div class="winner-stats">
+      <div class="winner-stat"><div class="winner-stat-val" id="ws-rent">—</div><div class="winner-stat-label">Rent CA</div></div>
+      <div class="winner-stat"><div class="winner-stat-val" id="ws-renttx">—</div><div class="winner-stat-label">Rent TX</div></div>
+      <div class="winner-stat"><div class="winner-stat-val" id="ws-growth">—</div><div class="winner-stat-label">Buy Growth</div></div>
+      <div class="winner-stat"><div class="winner-stat-val" id="ws-afford">—</div><div class="winner-stat-label">Buy Afford.</div></div>
+    </div>
+  </div>
+
+  <!-- SCENARIOS -->
+  <div class="scenarios">
+
+    <!-- A: RENT CA -->
+    <div class="scenario s-rent">
+      <div class="scenario-header">
+        <div class="scenario-badge">Scenario A</div>
+        <div class="scenario-title">Rent Apt.<br>in California</div>
+        <div class="scenario-sub">Stay in CA · CA income tax</div>
+      </div>
+      <div class="scenario-body">
+        <div class="section-label">Monthly Costs — Year 1</div>
+        <div class="line"><span class="line-key">Rent</span><span class="line-val neg" id="r-rent">—</span></div>
+        <div class="line"><span class="line-key">Utilities (<span id="r-sqft-label">—</span> sqft)</span><span class="line-val neg" id="r-util">—</span></div>
+        <div class="line"><span class="line-key">Renter's insurance</span><span class="line-val neg">−$15</span></div>
+        <div class="line"><span class="line-key">Federal tax + FICA</span><span class="line-val neg" id="r-fedtax">—</span></div>
+        <div class="line"><span class="line-key">CA state tax + SDI</span><span class="line-val neg" id="r-statax">—</span></div>
+        <div class="line"><span class="line-key">Living expenses</span><span class="line-val neg" id="r-living">—</span></div>
+        <div class="line"><span class="line-key">Net savings / mo (yr 1)</span><span class="line-val pos" id="r-msave">—</span></div>
+        <div class="section-label">After <span id="r-yrlabel">N</span> Years</div>
+        <div class="line"><span class="line-key">Total rent paid</span><span class="line-val neg" id="r-rentttl">—</span></div>
+        <div class="line"><span class="line-key">New savings + interest</span><span class="line-val pos" id="r-saveacc">—</span></div>
+        <div class="line"><span class="line-key">Original savings (intact)</span><span class="line-val pos" id="r-origsave">—</span></div>
+        <div class="line total"><span class="line-key">Total liquid for SAC down</span><span class="line-val gold" id="r-total">—</span></div>
+      </div>
+    </div>
+
+    <!-- B: RENT TX -->
+    <div class="scenario s-renttx">
+      <div class="scenario-header">
+        <div class="scenario-badge">Scenario B</div>
+        <div class="scenario-title">Rent House<br>in Texas</div>
+        <div class="scenario-sub">No state income tax · save more monthly</div>
+      </div>
+      <div class="scenario-body">
+        <div class="section-label">Monthly Costs — Year 1</div>
+        <div class="line"><span class="line-key">Rent</span><span class="line-val neg" id="tx-rent">—</span></div>
+        <div class="line"><span class="line-key">Utilities (<span id="tx-sqft-label">—</span> sqft)</span><span class="line-val neg" id="tx-util">—</span></div>
+        <div class="line"><span class="line-key">Renter's insurance</span><span class="line-val neg">−$15</span></div>
+        <div class="line"><span class="line-key">Federal tax + FICA</span><span class="line-val neg" id="tx-fedtax">—</span></div>
+        <div class="line"><span class="line-key">TX state tax</span><span class="line-val pos">$0</span></div>
+        <div class="line"><span class="line-key">Living expenses</span><span class="line-val neg" id="tx-living">—</span></div>
+        <div class="line"><span class="line-key">Net savings / mo (yr 1)</span><span class="line-val pos" id="tx-msave">—</span></div>
+        <div class="section-label">After <span id="tx-yrlabel">N</span> Years</div>
+        <div class="line"><span class="line-key">Total rent paid</span><span class="line-val neg" id="tx-rentttl">—</span></div>
+        <div class="line"><span class="line-key">New savings + interest</span><span class="line-val pos" id="tx-saveacc">—</span></div>
+        <div class="line"><span class="line-key">Original savings (intact)</span><span class="line-val pos" id="tx-origsave">—</span></div>
+        <div class="line total"><span class="line-key">Total liquid for SAC down</span><span class="line-val gold" id="tx-total">—</span></div>
+      </div>
+    </div>
+
+    <!-- C: BUY GROWTH -->
+    <div class="scenario s-growth">
+      <div class="scenario-header">
+        <div class="scenario-badge">Scenario C</div>
+        <div class="scenario-title">Buy — Growth<br>Market</div>
+        <div class="scenario-sub">Higher price · higher appreciation · sell → SAC</div>
+      </div>
+      <div class="scenario-body">
+        <div class="section-label">Upfront</div>
+        <div class="line"><span class="line-key">Down payment (10%)</span><span class="line-val neg" id="g-down">—</span></div>
+        <div class="line"><span class="line-key">Buyer closing costs (2%)</span><span class="line-val neg" id="g-closein">—</span></div>
+        <div class="section-label">Monthly Costs — Year 1</div>
+        <div class="line"><span class="line-key">P&amp;I payment</span><span class="line-val neg" id="g-pi">—</span></div>
+        <div class="line"><span class="line-key" id="g-pmi-label">PMI (0.5%/yr)</span><span class="line-val neg" id="g-pmi">—</span></div>
+        <div class="line"><span class="line-key">Property tax</span><span class="line-val neg" id="g-proptax">—</span></div>
+        <div class="line"><span class="line-key">Homeowner's insurance</span><span class="line-val neg" id="g-ins">—</span></div>
+        <div class="line"><span class="line-key">Utilities (<span id="g-sqft-label">—</span> sqft)</span><span class="line-val neg" id="g-util">—</span></div>
+        <div class="line"><span class="line-key">Maintenance (1%/yr)</span><span class="line-val neg" id="g-maint">—</span></div>
+        <div class="line"><span class="line-key">Federal tax + FICA</span><span class="line-val neg" id="g-fedtax">—</span></div>
+        <div class="line"><span class="line-key">State income tax</span><span class="line-val neg" id="g-statax">—</span></div>
+        <div class="line"><span class="line-key">Living expenses</span><span class="line-val neg" id="g-living">—</span></div>
+        <div class="line"><span class="line-key">Net savings / mo (yr 1)</span><span class="line-val pos" id="g-msave">—</span></div>
+        <div class="section-label">Sale After <span id="g-yrlabel">N</span> Years</div>
+        <div class="line"><span class="line-key">Sale price</span><span class="line-val pos" id="g-saleprice">—</span></div>
+        <div class="line"><span class="line-key">Remaining mortgage</span><span class="line-val neg" id="g-balance">—</span></div>
+        <div class="line"><span class="line-key">Realtor (6%) + closing</span><span class="line-val neg" id="g-costs">—</span></div>
+        <div class="line"><span class="line-key">Net sale proceeds</span><span class="line-val pos" id="g-netsal">—</span></div>
+        <div class="line total"><span class="line-key">Total liquid for SAC down</span><span class="line-val gold" id="g-total">—</span></div>
+      </div>
+    </div>
+
+    <!-- D: BUY AFFORDABLE -->
+    <div class="scenario s-afford">
+      <div class="scenario-header">
+        <div class="scenario-badge">Scenario D</div>
+        <div class="scenario-title">Buy — Affordable<br>Market</div>
+        <div class="scenario-sub">Lower price · lower appreciation · sell → SAC</div>
+      </div>
+      <div class="scenario-body">
+        <div class="section-label">Upfront</div>
+        <div class="line"><span class="line-key">Down payment (10%)</span><span class="line-val neg" id="a-down">—</span></div>
+        <div class="line"><span class="line-key">Buyer closing costs (2%)</span><span class="line-val neg" id="a-closein">—</span></div>
+        <div class="section-label">Monthly Costs — Year 1</div>
+        <div class="line"><span class="line-key">P&amp;I payment</span><span class="line-val neg" id="a-pi">—</span></div>
+        <div class="line"><span class="line-key" id="a-pmi-label">PMI (0.5%/yr)</span><span class="line-val neg" id="a-pmi">—</span></div>
+        <div class="line"><span class="line-key">Property tax</span><span class="line-val neg" id="a-proptax">—</span></div>
+        <div class="line"><span class="line-key">Homeowner's insurance</span><span class="line-val neg" id="a-ins">—</span></div>
+        <div class="line"><span class="line-key">Utilities (<span id="a-sqft-label">—</span> sqft)</span><span class="line-val neg" id="a-util">—</span></div>
+        <div class="line"><span class="line-key">Maintenance (1%/yr)</span><span class="line-val neg" id="a-maint">—</span></div>
+        <div class="line"><span class="line-key">Federal tax + FICA</span><span class="line-val neg" id="a-fedtax">—</span></div>
+        <div class="line"><span class="line-key">State income tax</span><span class="line-val neg" id="a-statax">—</span></div>
+        <div class="line"><span class="line-key">Living expenses</span><span class="line-val neg" id="a-living">—</span></div>
+        <div class="line"><span class="line-key">Net savings / mo (yr 1)</span><span class="line-val pos" id="a-msave">—</span></div>
+        <div class="section-label">Sale After <span id="a-yrlabel">N</span> Years</div>
+        <div class="line"><span class="line-key">Sale price</span><span class="line-val pos" id="a-saleprice">—</span></div>
+        <div class="line"><span class="line-key">Remaining mortgage</span><span class="line-val neg" id="a-balance">—</span></div>
+        <div class="line"><span class="line-key">Realtor (6%) + closing</span><span class="line-val neg" id="a-costs">—</span></div>
+        <div class="line"><span class="line-key">Net sale proceeds</span><span class="line-val pos" id="a-netsal">—</span></div>
+        <div class="line total"><span class="line-key">Total liquid for SAC down</span><span class="line-val gold" id="a-total">—</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SACRAMENTO READINESS -->
+  <div class="sac-panel">
+    <div class="sac-title">📍 Sacramento Buying Power</div>
+    <div class="sac-grid">
+      <div class="sac-card">
+        <div class="sac-card-title">A — Rent CA</div>
+        <div class="sac-card-val" id="sac-r-val">—</div>
+        <div style="font-size:10px;color:var(--muted)">available for down payment</div>
+        <div class="sac-bar-bg"><div class="sac-bar-fill" id="sac-r-bar"></div></div>
+        <div class="sac-check" id="sac-r-check">—</div>
+      </div>
+      <div class="sac-card">
+        <div class="sac-card-title">B — Rent TX</div>
+        <div class="sac-card-val" id="sac-tx-val">—</div>
+        <div style="font-size:10px;color:var(--muted)">available for down payment</div>
+        <div class="sac-bar-bg"><div class="sac-bar-fill" id="sac-tx-bar"></div></div>
+        <div class="sac-check" id="sac-tx-check">—</div>
+      </div>
+      <div class="sac-card">
+        <div class="sac-card-title">C — Buy Growth Market</div>
+        <div class="sac-card-val" id="sac-g-val">—</div>
+        <div style="font-size:10px;color:var(--muted)">available for down payment</div>
+        <div class="sac-bar-bg"><div class="sac-bar-fill" id="sac-g-bar"></div></div>
+        <div class="sac-check" id="sac-g-check">—</div>
+      </div>
+      <div class="sac-card">
+        <div class="sac-card-title">D — Buy Affordable Market</div>
+        <div class="sac-card-val" id="sac-a-val">—</div>
+        <div style="font-size:10px;color:var(--muted)">available for down payment</div>
+        <div class="sac-bar-bg"><div class="sac-bar-fill" id="sac-a-bar"></div></div>
+        <div class="sac-check" id="sac-a-check">—</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:var(--muted);text-align:center" id="sac-targets">—</div>
+  </div>
+
+  <div class="assumptions">
+    Assumptions · CA: 2025 MFJ federal brackets, $31,500 std deduction (OBBBA), $2,000 Child Tax Credit, CA income tax MFJ + $10,726 std deduction + $433 dependent credit + 1.1% SDI · TX: no state income tax · Buy scenarios: state income tax set by slider · FICA 7.65% all scenarios · Both buy scenarios: 10% down conventional, PMI 0.5%/yr cancels at 80% LTV (month-by-month simulation), 1%/yr maintenance, homeowner's insurance ~$0.055% of price/yr · Property tax: flat $/mo from actual listing bill, compounds annually at the selected growth rate (frozen base ~1%/yr · Prop 13 cap ~2%/yr · full reassessment market ~4–5%/yr) · Utilities: CA apt ~$0.14/sqft/mo · TX house ~$0.19/sqft/mo · Growth market ~$0.18/sqft/mo (heat pump) · Affordable market ~$0.22/sqft/mo (nat. gas) · Buyer closing costs 2%, realtor 6% on sale, $1,500 seller closing · Savings compound monthly at selected yield · Rent inflates annually · Sacramento target price appreciates at growth market rate · Educational tool — not financial advice
+  </div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => n.toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:0,maximumFractionDigits:0});
+
+function mortgagePayment(principal, annualRate, years){
+  const r = annualRate/100/12, n = years*12;
+  if(r===0) return principal/n;
+  return principal*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
+}
+
+function federalTax(income){
+  const taxable = Math.max(0, income-31500);
+  const brackets = [[23850,.10],[96950,.12],[206700,.22],[394600,.24],[501050,.32],[751600,.35],[Infinity,.37]];
+  let tax=0, prev=0;
+  for(const [top,rate] of brackets){
+    const chunk = Math.min(taxable,top)-prev;
+    if(chunk<=0) break;
+    tax += chunk*rate; prev = top;
+  }
+  return Math.max(0, tax-2000);
+}
+
+function caTax(income){
+  const taxable = Math.max(0, income-10726);
+  const brackets = [[20824,.01],[49368,.02],[77918,.04],[108162,.06],[136700,.08],[698274,.093],[837922,.103],[1000000,.113],[Infinity,.123]];
+  let tax=0, prev=0;
+  for(const [top,rate] of brackets){
+    const chunk = Math.min(taxable,top)-prev;
+    if(chunk<=0) break;
+    tax += chunk*rate; prev = top;
+  }
+  return Math.max(0, tax-433) + income*0.011;
+}
+
+function simulateBuy(price, downPct, loanRate, apprRate, propTaxMo, taxGrowthRate, stateTaxRate, utilPerSqft, sqft, savings, takeHome, living, MONTHS, monthlyYield){
+  const down    = price * downPct;
+  const loan    = price * (1 - downPct);
+  const close   = price * 0.02;
+  const upfront = down + close;
+  const piMo    = mortgagePayment(loan, loanRate, 30);
+  const pmiRate = 0.005/12;
+  const ins     = price * 0.00055 / 12;
+  const maint   = price * 0.01 / 12;
+  const util    = Math.round(sqft * utilPerSqft);
+  const mRate   = loanRate/100/12;
+
+  let savBal  = Math.max(0, savings - upfront);
+  let loanBal = loan;
+  let homeVal = price;
+  let pmiDone = false, pmiMo = null;
+
+  for(let m=0; m<MONTHS; m++){
+    const yr = Math.floor(m/12);
+    const taxThisMonth = propTaxMo * Math.pow(1 + taxGrowthRate/100, yr);
+    const interest  = loanBal * mRate;
+    const principal = piMo - interest;
+    loanBal -= principal;
+    homeVal *= (1 + apprRate/100/12);
+    let pmi = 0;
+    if(loanBal/homeVal > 0.80){ pmi = loanBal * pmiRate; }
+    else if(!pmiDone){ pmiDone=true; pmiMo=m+1; }
+    const fixed = piMo + taxThisMonth + ins + maint + util + pmi;
+    savBal = savBal*(1+monthlyYield) + (takeHome - fixed - living);
+  }
+
+  const salePrice = price * Math.pow(1+apprRate/100, MONTHS/12);
+  const realtor   = salePrice * 0.06;
+  const netSale   = salePrice - loanBal - realtor - 1500;
+  const total     = Math.max(0, savBal) + Math.max(0, netSale);
+
+  // Year 1 display values
+  const pmi1   = loan * pmiRate;
+  const moSave = takeHome - (piMo + pmi1 + propTaxMo + ins + maint + util) - living;
+  const taxFinalYr = propTaxMo * Math.pow(1 + taxGrowthRate/100, MONTHS/12);
+  const pmiLabel = pmiMo
+    ? `PMI cancels mo. ${pmiMo} (~yr ${(pmiMo/12).toFixed(1)})`
+    : `PMI active full period`;
+
+  return { down, close, piMo, pmi1, propTax: propTaxMo, taxFinalYr, ins, util, maint, moSave,
+           salePrice, loanBal, realtor, netSale, total, pmiLabel, sqft, takeHome };
+}
+
+function update(){
+  const income    = +$('s-income').value;
+  const savings   = +$('s-savings').value;
+  const living    = +$('s-living').value;
+  const yld       = +$('s-yield').value;
+  const rent      = +$('s-rent').value;
+  const rentTX    = +$('s-renttx').value;
+  const sacprice  = +$('s-sacprice').value;
+  const convrate  = +$('s-convrate').value;
+  const rinfl     = +$('s-rentinfl').value;
+  const YEARS     = +$('s-years').value;
+  const MONTHS    = YEARS*12;
+  const sqftCA    = +$('s-sqft-ca').value;
+  const sqftTX    = +$('s-sqft-tx').value;
+  const gprice    = +$('s-gprice').value;
+  const gappr     = +$('s-gappr').value;
+  const gtax      = +$('s-gtax').value;
+  const gtaxgrowth= +$('s-gtaxgrowth').value;
+  const gtaxInc   = +$('s-gtaxincome').value;
+  const sqftG     = +$('s-sqft-g').value;
+  const aprice    = +$('s-aprice').value;
+  const aappr     = +$('s-aappr').value;
+  const atax      = +$('s-atax').value;
+  const ataxgrowth= +$('s-ataxgrowth').value;
+  const ataxInc   = +$('s-ataxincome').value;
+  const sqftA     = +$('s-sqft-a').value;
+
+  const myield    = yld/100/12;
+  const rentIns   = 15;
+  const gross     = income/12;
+
+  // Utility calcs
+  const utilCA  = Math.round(sqftCA * 0.14);
+  const utilTX  = Math.round(sqftTX * 0.19);
+  const utilG   = Math.round(sqftG  * 0.18);
+  const utilA   = Math.round(sqftA  * 0.22);
+
+  // Slider displays
+  $('v-income').textContent   = fmt(income);
+  $('v-savings').textContent  = fmt(savings);
+  $('v-living').textContent   = fmt(living);
+  $('v-yield').textContent    = yld.toFixed(2)+'%';
+  $('v-convrate').textContent = convrate.toFixed(3)+'%';
+  $('v-years').textContent    = YEARS===1?'1 year':`${YEARS} years`;
+  $('v-rent').textContent     = fmt(rent);
+  $('v-renttx').textContent   = fmt(rentTX);
+  $('v-sacprice').textContent = fmt(sacprice);
+  $('v-rentinfl').textContent = rinfl.toFixed(1)+'%';
+  $('v-sqft-ca').innerHTML    = `${sqftCA.toLocaleString()} sqft → <span id="v-util-ca">${fmt(utilCA)}</span>/mo`;
+  $('v-sqft-tx').innerHTML    = `${sqftTX.toLocaleString()} sqft → <span id="v-util-tx">${fmt(utilTX)}</span>/mo`;
+  $('v-gprice').textContent   = fmt(gprice);
+  $('v-gappr').textContent    = gappr.toFixed(1)+'%';
+  $('v-gtax').textContent     = fmt(gtax)+'/mo';
+  $('v-gtaxgrowth').textContent = gtaxgrowth.toFixed(1)+'%';
+  $('v-gtaxincome').textContent = gtaxInc.toFixed(2)+'%';
+  $('v-sqft-g').innerHTML     = `${sqftG.toLocaleString()} sqft → <span id="v-util-g">${fmt(utilG)}</span>/mo`;
+  $('v-aprice').textContent   = fmt(aprice);
+  $('v-aappr').textContent    = aappr.toFixed(1)+'%';
+  $('v-atax').textContent     = fmt(atax)+'/mo';
+  $('v-ataxgrowth').textContent = ataxgrowth.toFixed(1)+'%';
+  $('v-ataxincome').textContent = ataxInc.toFixed(2)+'%';
+  $('v-sqft-a').innerHTML     = `${sqftA.toLocaleString()} sqft → <span id="v-util-a">${fmt(utilA)}</span>/mo`;
+
+  const yrLabel = YEARS===1?'1 Year':`${YEARS} Years`;
+
+  // Tax calculations
+  const fedMo   = federalTax(income)/12;
+  const ficaMo  = income*0.0765/12;
+  const caMo    = caTax(income)/12;
+  const caTH    = gross - fedMo - ficaMo - caMo;
+  const txTH    = gross - fedMo - ficaMo;
+  const gTH     = gross - fedMo - ficaMo - income*gtaxInc/100/12;
+  const aTH     = gross - fedMo - ficaMo - income*ataxInc/100/12;
+
+  // ---- SCENARIO A: RENT CA ----
+  let rBal=savings, rRentPaid=0, rLastRent=rent;
+  for(let m=0; m<MONTHS; m++){
+    const yr=Math.floor(m/12);
+    const mRent=rent*Math.pow(1+rinfl/100,yr);
+    if(m===MONTHS-1) rLastRent=mRent;
+    rBal=rBal*(1+myield)+(caTH-mRent-rentIns-utilCA-living);
+    rRentPaid+=mRent+rentIns;
+  }
+  const rTotal  = Math.max(0,rBal);
+  const rMoSave = caTH-(rent+rentIns+utilCA)-living;
+
+  $('r-rent').textContent    = `−${fmt(rent)} → ${fmt(rLastRent)} (yr ${YEARS})`;
+  $('r-util').textContent    = `−${fmt(utilCA)}`;
+  $('r-sqft-label').textContent = sqftCA.toLocaleString();
+  $('r-fedtax').textContent  = `−${fmt(fedMo+ficaMo)}`;
+  $('r-statax').textContent  = `−${fmt(caMo)}`;
+  $('r-living').textContent  = `−${fmt(living)}`;
+  $('r-msave').textContent   = rMoSave>=0?`+${fmt(rMoSave)}`:`−${fmt(-rMoSave)}`;
+  $('r-rentttl').textContent = `−${fmt(rRentPaid)}`;
+  $('r-saveacc').textContent = `+${fmt(Math.max(0,rTotal-savings))}`;
+  $('r-origsave').textContent= `+${fmt(savings)}`;
+  $('r-total').textContent   = fmt(rTotal);
+  $('r-yrlabel').textContent = yrLabel;
+
+  // ---- SCENARIO B: RENT TX ----
+  let txBal=savings, txRentPaid=0, txLastRent=rentTX;
+  for(let m=0; m<MONTHS; m++){
+    const yr=Math.floor(m/12);
+    const mRent=rentTX*Math.pow(1+rinfl/100,yr);
+    if(m===MONTHS-1) txLastRent=mRent;
+    txBal=txBal*(1+myield)+(txTH-mRent-rentIns-utilTX-living);
+    txRentPaid+=mRent+rentIns;
+  }
+  const txTotal  = Math.max(0,txBal);
+  const txMoSave = txTH-(rentTX+rentIns+utilTX)-living;
+
+  $('tx-rent').textContent    = `−${fmt(rentTX)} → ${fmt(txLastRent)} (yr ${YEARS})`;
+  $('tx-util').textContent    = `−${fmt(utilTX)}`;
+  $('tx-sqft-label').textContent = sqftTX.toLocaleString();
+  $('tx-fedtax').textContent  = `−${fmt(fedMo+ficaMo)}`;
+  $('tx-living').textContent  = `−${fmt(living)}`;
+  $('tx-msave').textContent   = txMoSave>=0?`+${fmt(txMoSave)}`:`−${fmt(-txMoSave)}`;
+  $('tx-rentttl').textContent = `−${fmt(txRentPaid)}`;
+  $('tx-saveacc').textContent = `+${fmt(Math.max(0,txTotal-savings))}`;
+  $('tx-origsave').textContent= `+${fmt(savings)}`;
+  $('tx-total').textContent   = fmt(txTotal);
+  $('tx-yrlabel').textContent = yrLabel;
+
+  // ---- SCENARIO C: BUY GROWTH ----
+  const g = simulateBuy(gprice, 0.10, convrate, gappr, gtax, gtaxgrowth, gtaxInc, 0.18, sqftG, savings, gTH, living, MONTHS, myield);
+  $('g-down').textContent     = `−${fmt(g.down)}`;
+  $('g-closein').textContent  = `−${fmt(g.close)}`;
+  $('g-pi').textContent       = `−${fmt(g.piMo)}`;
+  $('g-pmi').textContent      = `−${fmt(g.pmi1)}/mo`;
+  $('g-pmi-label').textContent= g.pmiLabel;
+  $('g-proptax').textContent  = `−${fmt(g.propTax)}/mo → ${fmt(g.taxFinalYr)}/mo (yr ${YEARS})`;
+  $('g-ins').textContent      = `−${fmt(g.ins)}`;
+  $('g-util').textContent     = `−${fmt(g.util)}`;
+  $('g-maint').textContent    = `−${fmt(g.maint)}`;
+  $('g-fedtax').textContent   = `−${fmt(fedMo+ficaMo)}`;
+  $('g-statax').textContent   = `−${fmt(income*gtaxInc/100/12)}`;
+  $('g-living').textContent   = `−${fmt(living)}`;
+  $('g-msave').textContent    = g.moSave>=0?`+${fmt(g.moSave)}`:`−${fmt(-g.moSave)}`;
+  $('g-saleprice').textContent= `+${fmt(g.salePrice)}`;
+  $('g-balance').textContent  = `−${fmt(g.loanBal)}`;
+  $('g-costs').textContent    = `−${fmt(g.realtor+1500)}`;
+  $('g-netsal').textContent   = g.netSale>=0?`+${fmt(g.netSale)}`:`−${fmt(-g.netSale)}`;
+  $('g-total').textContent    = fmt(g.total);
+  $('g-sqft-label').textContent = sqftG.toLocaleString();
+  $('g-yrlabel').textContent  = yrLabel;
+
+  // ---- SCENARIO D: BUY AFFORDABLE ----
+  const a = simulateBuy(aprice, 0.10, convrate, aappr, atax, ataxgrowth, ataxInc, 0.22, sqftA, savings, aTH, living, MONTHS, myield);
+  $('a-down').textContent     = `−${fmt(a.down)}`;
+  $('a-closein').textContent  = `−${fmt(a.close)}`;
+  $('a-pi').textContent       = `−${fmt(a.piMo)}`;
+  $('a-pmi').textContent      = `−${fmt(a.pmi1)}/mo`;
+  $('a-pmi-label').textContent= a.pmiLabel;
+  $('a-proptax').textContent  = `−${fmt(a.propTax)}/mo → ${fmt(a.taxFinalYr)}/mo (yr ${YEARS})`;
+  $('a-ins').textContent      = `−${fmt(a.ins)}`;
+  $('a-util').textContent     = `−${fmt(a.util)}`;
+  $('a-maint').textContent    = `−${fmt(a.maint)}`;
+  $('a-fedtax').textContent   = `−${fmt(fedMo+ficaMo)}`;
+  $('a-statax').textContent   = `−${fmt(income*ataxInc/100/12)}`;
+  $('a-living').textContent   = `−${fmt(living)}`;
+  $('a-msave').textContent    = a.moSave>=0?`+${fmt(a.moSave)}`:`−${fmt(-a.moSave)}`;
+  $('a-saleprice').textContent= `+${fmt(a.salePrice)}`;
+  $('a-balance').textContent  = `−${fmt(a.loanBal)}`;
+  $('a-costs').textContent    = `−${fmt(a.realtor+1500)}`;
+  $('a-netsal').textContent   = a.netSale>=0?`+${fmt(a.netSale)}`:`−${fmt(-a.netSale)}`;
+  $('a-total').textContent    = fmt(a.total);
+  $('a-sqft-label').textContent = sqftA.toLocaleString();
+  $('a-yrlabel').textContent  = yrLabel;
+
+  // ---- SACRAMENTO READINESS ----
+  const sacFut = sacprice * Math.pow(1+gappr/100, YEARS);
+  const sac10  = sacFut*0.10 + sacFut*0.02;
+  const sac20  = sacFut*0.20 + sacFut*0.02;
+  const maxTot = Math.max(rTotal, txTotal, g.total, a.total, sac20)*1.05;
+
+  function sacStatus(total, label, color){
+    $(`sac-${label}-val`).textContent = fmt(total);
+    $(`sac-${label}-bar`).style.cssText = `width:${Math.min(100,total/maxTot*100)}%;background:${color}`;
+    const el = $(`sac-${label}-check`);
+    if(total>=sac20){
+      el.textContent=`✅ 20% down + closing covered (${fmt(total-sac20)} surplus)`;
+      el.style.color='var(--green)';
+    } else if(total>=sac10){
+      el.textContent=`✅ 10% down + closing covered — need ${fmt(sac20-total)} more for 20%`;
+      el.style.color='var(--gold)';
+    } else {
+      el.textContent=`❌ Short ${fmt(sac10-total)} for 10% down + closing`;
+      el.style.color='var(--red)';
+    }
+  }
+  sacStatus(rTotal,   'r',  'var(--blue)');
+  sacStatus(txTotal,  'tx', 'var(--orange)');
+  sacStatus(g.total,  'g',  'var(--green)');
+  sacStatus(a.total,  'a',  'var(--purple)');
+  $('sac-targets').textContent = `Sacramento in ${YEARS} yr${YEARS===1?'':'s'}: ~${fmt(sacFut)} · 10% down+closing: ${fmt(sac10)} · 20% down+closing: ${fmt(sac20)}`;
+
+  // ---- INSIGHT BAR — the agent's claim ----
+  const gvsa = g.total - a.total;
+  const agentRight = gvsa > 0;
+  const priceDiff = gprice - aprice;
+  const downDiff  = priceDiff * 0.10;
+  $('insight-bar').style.background = agentRight
+    ? 'linear-gradient(135deg,var(--green-dim),rgba(0,0,0,0))'
+    : 'linear-gradient(135deg,var(--purple-dim),rgba(0,0,0,0))';
+  $('insight-bar').style.borderColor = agentRight ? 'var(--green)44' : 'var(--purple)44';
+  $('insight-bar').innerHTML = agentRight
+    ? `<strong>The agent is right at these settings:</strong> The growth market (C) produces ${fmt(gvsa)} more than the affordable market (D) despite costing ${fmt(priceDiff)} more. Higher appreciation more than overcomes the lower monthly savings from the smaller mortgage. The "equity trap" concern is valid when the appreciation gap is wide enough.`
+    : `<strong>The agent is wrong at these settings:</strong> The affordable market (D) produces ${fmt(-gvsa)} <em>more</em> than the growth market (C). The lower price reduces the mortgage by ${fmt(priceDiff * 0.90)}, freeing up ${fmt(Math.abs(a.moSave - g.moSave))}/mo in extra savings that compounds faster than the appreciation gap. The real estate agent's "equity trap" argument doesn't hold here — adjust appreciation rates and prices to find your own breakeven.`;
+
+  // ---- WINNER BANNER ----
+  const vals = [
+    {label:'Rent & Save in CA', val:rTotal,  color:'var(--blue)',   id:'rent'},
+    {label:'Rent & Save in TX', val:txTotal, color:'var(--orange)', id:'renttx'},
+    {label:'Buy Growth Market', val:g.total, color:'var(--green)',  id:'growth'},
+    {label:'Buy Affordable Market', val:a.total, color:'var(--purple)', id:'afford'},
+  ];
+  vals.sort((a,b)=>b.val-a.val);
+  const W=vals[0];
+  const bgMap={rent:'var(--blue-dim)',renttx:'var(--orange-dim)',growth:'var(--green-dim)',afford:'var(--purple-dim)'};
+  $('winner-banner').style.cssText=`background:linear-gradient(135deg,${bgMap[W.id]},rgba(0,0,0,0));border:1px solid ${W.color}44;border-radius:12px;padding:18px 24px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;gap:16px`;
+  $('winner-eyebrow').textContent=`BEST PATH TO SACRAMENTO — after ${YEARS} year${YEARS===1?'':'s'}`;
+  $('winner-title').textContent=`✓ ${W.label}`;
+  $('winner-title').style.color=W.color;
+  $('winner-note').textContent=`${fmt(W.val-vals[1].val)} more toward Sacramento than the next best option`;
+
+  $('ws-rent').textContent   = fmt(rTotal);
+  $('ws-renttx').textContent = fmt(txTotal);
+  $('ws-growth').textContent = fmt(g.total);
+  $('ws-afford').textContent = fmt(a.total);
+  ['ws-rent','ws-renttx','ws-growth','ws-afford'].forEach(id=>$(id).style.color='var(--muted)');
+  const winMap={rent:'ws-rent',renttx:'ws-renttx',growth:'ws-growth',afford:'ws-afford'};
+  $(winMap[W.id]).style.color=W.color;
+}
+
+// --- Slider persistence via localStorage ---
+const SLIDERS = [
+  's-income','s-savings','s-living','s-yield','s-convrate','s-years',
+  's-rent','s-sqft-ca','s-renttx','s-sqft-tx','s-rentinfl','s-sacprice',
+  's-gprice','s-gappr','s-gtax','s-gtaxgrowth','s-gtaxincome','s-sqft-g',
+  's-aprice','s-aappr','s-atax','s-ataxgrowth','s-ataxincome','s-sqft-a'
+];
+
+function saveSliders(){
+  const vals = {};
+  SLIDERS.forEach(id => { vals[id] = $(id).value; });
+  try { localStorage.setItem('housing-calc-v1', JSON.stringify(vals)); } catch(e){}
+}
+
+function loadSliders(){
+  try {
+    const saved = localStorage.getItem('housing-calc-v1');
+    if(!saved) return;
+    const vals = JSON.parse(saved);
+    SLIDERS.forEach(id => { if(vals[id] !== undefined && $(id)) $(id).value = vals[id]; });
+  } catch(e){}
+}
+
+// Wrap update to also save on every change
+const _update = update;
+window.update = function(){ _update(); saveSliders(); };
+
+// Restore on load, then calculate
+loadSliders();
+update();
+</script>
+</body>
+</html>
