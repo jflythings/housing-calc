@@ -111,6 +111,12 @@ input[type=range]{width:100%;accent-color:var(--gold);cursor:pointer}
 
 .assumptions{font-size:10px;color:var(--muted2);text-align:center;padding:14px;border:1px solid var(--border);border-radius:8px;line-height:1.7;font-style:italic}
 
+.nav{background:#0f1117;border-bottom:1px solid var(--border2);padding:0 40px;display:flex;align-items:center;gap:4px;height:48px}
+.nav-brand{font-family:var(--serif);font-size:18px;color:var(--gold);margin-right:20px;text-decoration:none}
+.nav a{font-size:11px;color:var(--muted);text-decoration:none;padding:6px 14px;border-radius:6px;letter-spacing:.05em;transition:color .15s,background .15s}
+.nav a:hover{color:var(--text);background:var(--surface)}
+.nav a.active{color:var(--gold);background:var(--gold-dim)}
+
 @media(max-width:1100px){
   .inputs-grid{grid-template-columns:repeat(2,1fr)}
   .scenarios{grid-template-columns:repeat(2,1fr)}
@@ -119,12 +125,20 @@ input[type=range]{width:100%;accent-color:var(--gold);cursor:pointer}
 @media(max-width:700px){
   .inputs-grid,.scenarios,.sac-grid{grid-template-columns:1fr}
   .main,.header{padding:18px}
+  .nav{padding:0 20px}
   .winner-banner{flex-direction:column}
   .winner-stats{justify-content:center;flex-wrap:wrap}
 }
 </style>
 </head>
 <body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-brand">Housing Calc</a>
+  <a href="index.html" class="active">Calculator</a>
+  <a href="naca.html">NACA Analyzer</a>
+  <a href="strategy.html">Strategy</a>
+</nav>
 
 <div class="header">
   <div class="header-inner">

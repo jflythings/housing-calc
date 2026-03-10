@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Strategy · Housing Calc</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0c0f;--surface:#13151a;--border:#1e2229;--border2:#262b34;
+  --text:#c9d4e0;--muted:#4a5568;--muted2:#2d3748;
+  --gold:#c9a84c;--gold-dim:#3d2e10;
+  --green:#4caf82;--green-dim:#1a3d2e;
+  --red:#d05a5a;--red-dim:#3d1a1a;
+  --blue:#6b9fd4;--blue-dim:#1a2d3d;
+  --orange:#d4924c;--orange-dim:#3d2410;
+  --purple:#a78bfa;--purple-dim:#2d1f4a;
+  --mono:'DM Mono',monospace;--serif:'Cormorant Garamond',serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:100vh}
+
+.nav{background:#0f1117;border-bottom:1px solid var(--border2);padding:0 40px;display:flex;align-items:center;gap:4px;height:48px}
+.nav-brand{font-family:var(--serif);font-size:18px;color:var(--gold);margin-right:20px;text-decoration:none}
+.nav a{font-size:11px;color:var(--muted);text-decoration:none;padding:6px 14px;border-radius:6px;letter-spacing:.05em;transition:color .15s,background .15s}
+.nav a:hover{color:var(--text);background:var(--surface)}
+.nav a.active{color:var(--gold);background:var(--gold-dim)}
+
+.header{background:linear-gradient(180deg,#0f1117 0%,var(--bg) 100%);border-bottom:1px solid var(--border2);padding:32px 40px 24px}
+.header-inner{max-width:900px;margin:0 auto}
+.eyebrow{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.title{font-family:var(--serif);font-size:38px;font-weight:700;color:#e8dcc8;letter-spacing:-.01em;line-height:1.1}
+.subtitle{font-size:12px;color:var(--muted);margin-top:6px;font-style:italic}
+
+.main{max-width:900px;margin:0 auto;padding:32px 40px}
+
+/* PROGRESS OVERVIEW */
+.phases{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:32px}
+.phase-pill{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;text-align:center;cursor:pointer;transition:border-color .2s}
+.phase-pill:hover{border-color:var(--gold)}
+.phase-pill.done{border-color:var(--green);background:var(--green-dim)}
+.phase-num{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.phase-label{font-family:var(--serif);font-size:15px;color:var(--text)}
+.phase-pill.done .phase-label{color:var(--green)}
+.phase-status{font-size:10px;color:var(--muted);margin-top:3px}
+
+/* PHASE SECTIONS */
+.phase-section{margin-bottom:32px}
+.phase-header{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border2)}
+.phase-badge{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:18px;font-weight:700;flex-shrink:0}
+.phase-header-text{}
+.phase-header-title{font-family:var(--serif);font-size:24px;font-weight:700;color:#e8dcc8}
+.phase-header-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+.phase-1 .phase-badge{background:var(--blue-dim);border:1px solid var(--blue);color:var(--blue)}
+.phase-2 .phase-badge{background:var(--orange-dim);border:1px solid var(--orange);color:var(--orange)}
+.phase-3 .phase-badge{background:var(--green-dim);border:1px solid var(--green);color:var(--green)}
+.phase-4 .phase-badge{background:var(--gold-dim);border:1px solid var(--gold);color:var(--gold)}
+
+/* ITEMS */
+.item{display:flex;gap:14px;padding:12px 16px;border-radius:8px;margin-bottom:6px;cursor:pointer;transition:background .15s;border:1px solid transparent}
+.item:hover{background:var(--surface)}
+.item.done{background:rgba(76,175,130,.05);border-color:rgba(76,175,130,.15)}
+.item.urgent{border-color:rgba(208,90,90,.2);background:rgba(208,90,90,.04)}
+.checkbox{width:20px;height:20px;border-radius:4px;border:1.5px solid var(--muted2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .15s}
+.item.done .checkbox{background:var(--green);border-color:var(--green);color:#000}
+.item-body{}
+.item-title{font-size:12px;color:var(--text);margin-bottom:3px;line-height:1.4}
+.item.done .item-title{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--muted2)}
+.item-detail{font-size:10.5px;color:var(--muted);line-height:1.6}
+.item-detail a{color:var(--blue);text-decoration:none}
+.item-detail a:hover{text-decoration:underline}
+.item-tag{display:inline-block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:3px;margin-right:5px;margin-bottom:4px}
+.tag-now{background:var(--red-dim);color:var(--red);border:1px solid rgba(208,90,90,.3)}
+.tag-soon{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(212,146,76,.3)}
+.tag-later{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(107,159,212,.3)}
+.tag-ongoing{background:var(--muted2);color:var(--muted);border:1px solid var(--border)}
+
+/* DECISION BOX */
+.decision{background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:18px 22px;margin-bottom:20px}
+.decision-title{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+.decision-row{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--border)}
+.decision-row:last-child{border-bottom:none}
+.decision-key{font-size:11px;color:var(--muted)}
+.decision-val{font-size:11px;color:var(--text);font-weight:500}
+.decision-val.good{color:var(--green)}
+.decision-val.warn{color:var(--orange)}
+.decision-val.bad{color:var(--red)}
+
+/* NOTES */
+.note{font-size:11px;color:var(--muted);line-height:1.7;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-top:16px}
+.note strong{color:var(--gold)}
+
+@media(max-width:700px){
+  .phases{grid-template-columns:repeat(2,1fr)}
+  .main,.header,.nav{padding-left:20px;padding-right:20px}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-brand">Housing Calc</a>
+  <a href="index.html">Calculator</a>
+  <a href="naca.html">NACA Analyzer</a>
+  <a href="strategy.html" class="active">Strategy</a>
+</nav>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="eyebrow">Action Plan · Path to Sacramento</div>
+    <h1 class="title">The Strategy</h1>
+    <p class="subtitle">Click items to mark them done · Four phases from now to Sacramento</p>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- KEY DECISIONS ALREADY MADE -->
+  <div class="decision" style="margin-bottom:28px">
+    <div class="decision-title">📋 Key Decisions — Already Researched</div>
+    <div class="decision-row"><span class="decision-key">Interim purchase strategy</span><span class="decision-val good">Buy in growth market → sell → Sacramento</span></div>
+    <div class="decision-row"><span class="decision-key">Best loan product</span><span class="decision-val good">NACA — no down payment, no PMI, no closing costs, below-market rate</span></div>
+    <div class="decision-row"><span class="decision-key">Down payment vs buydown</span><span class="decision-val good">All savings → rate buydown (NACA requires $0 down)</span></div>
+    <div class="decision-row"><span class="decision-key">Who should apply</span><span class="decision-val good">He applies as sole borrower while she has no income</span></div>
+    <div class="decision-row"><span class="decision-key">Priority vs Non-Priority</span><span class="decision-val warn">Borderline — depends on exact gross + healthcare deduction vs $83,500 AMI</span></div>
+    <div class="decision-row"><span class="decision-key">Top target markets</span><span class="decision-val good">Columbus OH · Charlotte NC · Indianapolis IN</span></div>
+    <div class="decision-row"><span class="decision-key">PA as backup</span><span class="decision-val warn">Wyoming Borough — viable but lower appreciation than Columbus</span></div>
+    <div class="decision-row"><span class="decision-key">Sacramento — NACA viable when?</span><span class="decision-val warn">When combined income reaches ~$140k+</span></div>
+    <div class="decision-row"><span class="decision-key">Agent's "equity trap" claim</span><span class="decision-val good">Tested in calculator — not valid when appreciation gap is under ~2%</span></div>
+  </div>
+
+  <!-- PHASE 1 -->
+  <div class="phase-section phase-1">
+    <div class="phase-header">
+      <div class="phase-badge">1</div>
+      <div class="phase-header-text">
+        <div class="phase-header-title">Right Now — Fix the Foundation</div>
+        <div class="phase-header-sub">Credit, income, and NACA eligibility · Do these before anything else</div>
+      </div>
+    </div>
+
+    <div class="item urgent" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-now">Now</span>Pull all three credit reports</div>
+        <div class="item-detail">Visit <a href="https://annualcreditreport.com" target="_blank">annualcreditreport.com</a> — free, no card required. Pull Equifax, Experian, and TransUnion for both of you. Look for errors, collections, and high utilization. This is the starting point for everything else.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-now">Now</span>Add him as authorized user on her best credit card</div>
+        <div class="item-detail">Her card with the longest history and lowest utilization. Call the issuer and request to add him as an authorized user — he does not need to use the card. Her payment history and credit age appear on his report within 30–60 days. Expected score improvement: 40–80 points in 3–6 months.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-now">Now</span>Pay revolving balances below 10% utilization</div>
+        <div class="item-detail">Credit utilization is the fastest-moving score factor. Get every card below 30% immediately, below 10% before applying for a loan. Even a $500 paydown on a maxed $2,000 card moves the needle significantly.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-now">Now</span>Get his exact gross salary and W-2 Box 1 number</div>
+        <div class="item-detail">The difference between gross pay and W-2 Box 1 (after pre-tax deductions) determines NACA Priority status. If W-2 Box 1 is under $83,500 for Luzerne County — or his gross minus healthcare is under the AMI for whatever zip code they target — he qualifies as Priority, unlocking the 5.25% rate and removing census tract restrictions.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-now">Now</span>Check CHIP eligibility for the baby</div>
+        <div class="item-detail">The baby likely qualifies for Pennsylvania CHIP (Children's Health Insurance Program) regardless of his income. This is free or near-free comprehensive pediatric coverage. If approved, remove the baby from his employer plan — this reduces his pre-tax deduction, potentially helping NACA priority math, and saves money.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-now">Now</span>Do NOT apply for any new credit</div>
+        <div class="item-detail">No new credit cards, car loans, store cards, or anything else until after the mortgage closes. Every hard inquiry drops the score 5–10 points. Rate shopping for a mortgage is fine — all mortgage inquiries within a 14-day window count as one inquiry.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-soon">Soon</span>Attend the free NACA Homebuyer Workshop</div>
+        <div class="item-detail">Free, 4–5 hours, available online. Required first step before NACA counseling. Register at <a href="https://naca.com" target="_blank">naca.com</a>. No commitment. The workshop explains the full process, eligibility rules, and what documents you'll need. Do this before falling in love with any specific property.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-soon">Soon</span>Become NACA members ($36/year)</div>
+        <div class="item-detail">After the workshop, pay the $36 annual household membership. This starts the clock on your qualification timeline — NACA requires 3 months of documented savings and payment history from the date of membership. The sooner you join, the sooner the clock starts.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PHASE 2 -->
+  <div class="phase-section phase-2">
+    <div class="phase-header">
+      <div class="phase-badge">2</div>
+      <div class="phase-header-text">
+        <div class="phase-header-title">Months 1–3 — Location & Savings</div>
+        <div class="phase-header-sub">Lock in the target market · Save aggressively · NACA qualification clock running</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-soon">Month 1</span>Decide: Columbus, Charlotte, or Wyoming PA</div>
+        <div class="item-detail">Run the calculator with real listings from each market. Columbus has the strongest case: top growth market, Ohio income tax only 2.75%, affordable entry prices, and likely NACA-eligible census tracts. Charlotte is compelling but $325k stretches the income at 31% DTI. Wyoming PA is the safe, low-risk option — best if staying near family is the real priority. Use the calculator to test the actual numbers, not gut feel.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-soon">Month 1</span>Check NACA AMI for target zip codes</div>
+        <div class="item-detail">Go to <a href="https://naca.com" target="_blank">naca.com</a> and enter the zip codes of your top target areas. Write down the AMI number shown. Compare to his gross income (minus pre-tax healthcare). This determines Priority vs Non-Priority status and which properties are eligible. Different cities have different AMIs — Columbus and Charlotte may have very different thresholds than Luzerne County.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-soon">Month 1</span>Find a NACA-experienced buyer's agent in the target city</div>
+        <div class="item-detail">NACA has a list of affiliated agents who understand the program timeline and requirements. A standard agent unfamiliar with NACA may actually hurt you — they'll push you toward conventional loans or mismanage the seller contribution conversation. Ask specifically: "Have you closed a NACA transaction in the past 12 months?"</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-soon">Month 1–3</span>Save every dollar — target $1,500–2,000/month</div>
+        <div class="item-detail">NACA requires 3 months of documented savings showing consistent monthly contributions. The amount matters less than the consistency — they want to see a pattern. Every dollar saved also goes toward the rate buydown at closing: 4 points per 1% rate reduction, max 5 points total. On a $250k loan, the max 5-point buydown costs $12,500 and saves roughly $150/month forever.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-soon">Month 1–3</span>Schedule NACA counseling appointment</div>
+        <div class="item-detail">After the workshop and membership, book a counseling session. The counselor reviews income, debts, credit, and savings to determine qualification. They'll tell you exactly what needs to be fixed and how long it will take. NACA is known for being thorough — this process takes about 3 months total but the outcome is a genuinely below-market rate with no down payment.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-soon">Month 2–3</span>Run target addresses through FFIEC geocoder</div>
+        <div class="item-detail">For every property you get seriously interested in, check the census tract income level at <a href="https://ffiec.cfpb.gov" target="_blank">ffiec.cfpb.gov</a>. If Non-Priority: need Low or Moderate tract. If Priority: no restriction. Do this before getting emotionally attached to a listing — it takes 30 seconds and can save weeks of wasted time.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PHASE 3 -->
+  <div class="phase-section phase-3">
+    <div class="phase-header">
+      <div class="phase-badge">3</div>
+      <div class="phase-header-text">
+        <div class="phase-header-title">Month 3–6 — Find the House</div>
+        <div class="phase-header-sub">NACA qualified · Active search · Offer and negotiate</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-later">Month 3+</span>Get NACA qualification letter</div>
+        <div class="item-detail">After counseling and 3 months of documented savings, NACA issues a qualification letter. This is equivalent to a pre-approval but carries more weight with sellers — NACA is a real lender with Bank of America behind it, not a broker. The letter states the maximum loan amount and the rate.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-later">Month 3+</span>Tour properties with the NACA-experienced agent</div>
+        <div class="item-detail">Focus on: natural gas or heat pump heat (avoid electric resistance or oil), no HOA or HOA with verified healthy financials, no basement moisture, out of flood zone, property tax bill verified from county auditor records (not Redfin), and ceiling price that keeps PITI under 31% of gross. Walk neighborhoods at different times of day.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-later">Offer</span>Negotiate seller contribution toward rate buydown</div>
+        <div class="item-detail">When making an offer, ask the seller to contribute toward the NACA rate buydown as part of negotiation. On a $250k home, each 1% of seller contribution (1 point) reduces your rate by 0.25%. Combined with your own savings, you can hit the 5-point maximum and get the rate as low as 3.75%–4.00%, saving $100–150/month for the life of the loan. Frame it as "in lieu of a price reduction" — it doesn't affect the appraised value.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-later">Offer</span>Get a specialist inspection for any basement moisture</div>
+        <div class="item-detail">Standard home inspectors underqualify basement water issues. For any property showing moisture, painted white foundation walls, or efflorescence — hire a waterproofing specialist (many offer free assessments) before finalizing the offer. Get the written report. Surface cosmetic moisture vs. active hydrostatic pressure intrusion is the difference between a $2,000 fix and a $20,000 problem. Walk away from the latter.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-later">Offer</span>Ask seller about property tax exemptions in writing</div>
+        <div class="item-detail">Homestead exemptions, senior discounts, and veteran exemptions don't transfer to a new buyer. The tax bill you see on Redfin may reflect the seller's exemptions — your bill after closing could be higher. Ask the agent to request in writing what exemptions the current owner carries, then verify the actual millage rate with the county auditor to calculate your real bill.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-later">Closing</span>NACA closes within 28 days of contract</div>
+        <div class="item-detail">NACA's timeline from accepted offer to closing is typically 28 days. Have all documents ready: 2 years tax returns, 2 months pay stubs, 2 months bank statements, and the qualification letter. No surprises — NACA pre-approves thoroughly, so if you're qualified, the closing is smooth.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PHASE 4 -->
+  <div class="phase-section phase-4">
+    <div class="phase-header">
+      <div class="phase-badge">4</div>
+      <div class="phase-header-text">
+        <div class="phase-header-title">Years 1–5 — Build Toward Sacramento</div>
+        <div class="phase-header-sub">In the house · She returns to work · Sacramento comes into view</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-ongoing">Ongoing</span>She returns to work — add income to savings, not lifestyle</div>
+        <div class="item-detail">When she returns to work, the household income jumps significantly. Bank her entire paycheck. At $90k combined they can save $2,000–3,000/month. At $130–140k combined Sacramento becomes actively viable via NACA — run the NACA Analyzer with the new income number to see when Sacramento unlocks.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-ongoing">Ongoing</span>Keep him as sole NACA borrower until refinance or Sacramento</div>
+        <div class="item-detail">NACA restricts: no household member 21+ can own other property at Sacramento closing. The interim house must be sold before or at Sacramento closing. Plan the sale timeline 3–6 months in advance of the Sacramento purchase to avoid bridge loan complications.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-ongoing">Year 3–4</span>Monitor Sacramento NACA AMI threshold</div>
+        <div class="item-detail">Sacramento's HUD AMI is significantly higher than Luzerne County — likely $95,000–110,000+ for a household of 3. At $130–140k combined income they'll be Non-Priority, but Sacramento has ample low/moderate income tracts at affordable price points. Run the NACA Analyzer with Sacramento zip codes and their projected combined income to find the window.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-ongoing">Year 4–5</span>Sell interim home → Sacramento</div>
+        <div class="item-detail">List 3–6 months before the target Sacramento move date. In a Columbus or Charlotte growth market, net proceeds after 5 years at 4–5% appreciation should be $50,000–$80,000+. Combined with 5 years of savings, this is the Sacramento down payment stack. Do not sell without having the Sacramento NACA qualification letter already in hand — you don't want to be sitting on proceeds in a HYSA longer than necessary.</div>
+      </div>
+    </div>
+
+    <div class="item" onclick="toggle(this)">
+      <div class="checkbox"></div>
+      <div class="item-body">
+        <div class="item-title"><span class="item-tag tag-ongoing">Year 5</span>Open enrollment — fix healthcare before Sacramento</div>
+        <div class="item-detail">California has Covered California with strong ACA subsidies. Once they have a Sacramento move date, review healthcare options well in advance. A move to California is a qualifying life event that triggers a Special Enrollment Period — they don't have to wait for open enrollment. At $140k household income, subsidies on Covered California will be modest but available.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="note">
+    <strong>Remember:</strong> The NACA $25,000 soft-second lien on the interim property requires owner-occupancy for the life of the NACA loan. This lien must be resolved (typically released upon sale) before Sacramento closing. Build this into the timeline — confirm the payoff process with NACA at least 6 months before the planned sale.
+  </div>
+
+</div>
+
+<script>
+function toggle(el) {
+  el.classList.toggle('done');
+  el.querySelector('.checkbox').textContent = el.classList.contains('done') ? '✓' : '';
+  saveState();
+}
+
+function saveState() {
+  const items = document.querySelectorAll('.item');
+  const state = Array.from(items).map(el => el.classList.contains('done'));
+  try { localStorage.setItem('housing-strategy-v1', JSON.stringify(state)); } catch(e){}
+}
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('housing-strategy-v1');
+    if(!saved) return;
+    const state = JSON.parse(saved);
+    const items = document.querySelectorAll('.item');
+    items.forEach((el, i) => {
+      if(state[i]) {
+        el.classList.add('done');
+        el.querySelector('.checkbox').textContent = '✓';
+      }
+    });
+  } catch(e){}
+}
+
+loadState();
+</script>
+</body>
+</html>

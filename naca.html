@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>NACA Analyzer · Housing Calc</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0c0f;--surface:#13151a;--border:#1e2229;--border2:#262b34;
+  --text:#c9d4e0;--muted:#4a5568;--muted2:#2d3748;
+  --gold:#c9a84c;--gold-dim:#3d2e10;
+  --green:#4caf82;--green-dim:#1a3d2e;
+  --red:#d05a5a;--red-dim:#3d1a1a;
+  --blue:#6b9fd4;--blue-dim:#1a2d3d;
+  --orange:#d4924c;--orange-dim:#3d2410;
+  --purple:#a78bfa;--purple-dim:#2d1f4a;
+  --mono:'DM Mono',monospace;--serif:'Cormorant Garamond',serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:100vh}
+input[type=range]{width:100%;accent-color:var(--gold);cursor:pointer}
+
+/* NAV */
+.nav{background:#0f1117;border-bottom:1px solid var(--border2);padding:0 40px;display:flex;align-items:center;gap:4px;height:48px}
+.nav-brand{font-family:var(--serif);font-size:18px;color:var(--gold);margin-right:20px;text-decoration:none}
+.nav a{font-size:11px;color:var(--muted);text-decoration:none;padding:6px 14px;border-radius:6px;letter-spacing:.05em;transition:color .15s,background .15s}
+.nav a:hover{color:var(--text);background:var(--surface)}
+.nav a.active{color:var(--gold);background:var(--gold-dim)}
+
+.header{background:linear-gradient(180deg,#0f1117 0%,var(--bg) 100%);border-bottom:1px solid var(--border2);padding:32px 40px 24px}
+.header-inner{max-width:1200px;margin:0 auto}
+.eyebrow{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.title{font-family:var(--serif);font-size:38px;font-weight:700;color:#e8dcc8;letter-spacing:-.01em;line-height:1.1}
+.subtitle{font-size:12px;color:var(--muted);margin-top:6px;font-style:italic}
+
+.main{max-width:1200px;margin:0 auto;padding:32px 40px}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px}
+.card-title{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+
+.slider-row{margin-bottom:16px}
+.slider-label-row{display:flex;justify-content:space-between;margin-bottom:4px;align-items:baseline}
+.slider-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.slider-val{font-size:12px;font-weight:500;color:var(--gold)}
+.slider-hint{font-size:10px;color:var(--muted2);margin-top:2px;font-style:italic}
+
+/* STATUS BANNER */
+.status-banner{border-radius:12px;padding:20px 28px;margin-bottom:20px;border:1px solid transparent}
+.status-eyebrow{font-size:9px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:6px}
+.status-title{font-family:var(--serif);font-size:32px;font-weight:700;margin-bottom:4px}
+.status-note{font-size:11px;line-height:1.6}
+
+.priority .status-banner{background:linear-gradient(135deg,var(--green-dim),rgba(0,0,0,0));border-color:#4caf8244}
+.priority .status-eyebrow{color:var(--green)}
+.priority .status-title{color:#7cca9f}
+.nonpriority .status-banner{background:linear-gradient(135deg,var(--orange-dim),rgba(0,0,0,0));border-color:#d4924c44}
+.nonpriority .status-eyebrow{color:var(--orange)}
+.nonpriority .status-title{color:#e0a870}
+.borderline .status-banner{background:linear-gradient(135deg,var(--gold-dim),rgba(0,0,0,0));border-color:#c9a84c44}
+.borderline .status-eyebrow{color:var(--gold)}
+.borderline .status-title{color:var(--gold)}
+
+/* RESULT CARDS */
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px}
+.result-header{padding:14px 18px;border-bottom:1px solid var(--border);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted2)}
+.line{display:flex;justify-content:space-between;align-items:baseline;padding:5px 18px}
+.line-key{font-size:11px;color:var(--muted);flex:1}
+.line-val{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap}
+.line-val.neg{color:var(--red)}
+.line-val.pos{color:var(--green)}
+.line-val.gold{color:var(--gold)}
+.line-val.warn{color:var(--orange)}
+.line.total{background:rgba(255,255,255,.03);border-top:1px solid var(--border);padding:10px 18px;margin-top:4px}
+.line.total .line-key{font-size:11px;color:var(--text);font-weight:500}
+.line.total .line-val{font-size:14px;font-weight:700}
+.section-label{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted2);padding:12px 18px 6px;border-top:1px solid var(--border)}
+.section-label:first-child{border-top:none}
+
+/* BUYDOWN TABLE */
+.buydown-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:4px}
+.buydown-table th{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2);padding:8px 18px;text-align:left;border-bottom:1px solid var(--border)}
+.buydown-table td{padding:7px 18px;border-bottom:1px solid var(--border);color:var(--muted)}
+.buydown-table tr:last-child td{border-bottom:none}
+.buydown-table tr.highlight td{color:var(--text);background:rgba(201,168,76,.04)}
+.buydown-table .num{text-align:right;color:var(--text)}
+.buydown-table .green{color:var(--green)}
+.buydown-table .gold{color:var(--gold)}
+
+/* CENSUS PANEL */
+.census-panel{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:22px 26px;margin-bottom:20px}
+.census-title{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+.step{display:flex;gap:16px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.step:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--gold-dim);border:1px solid var(--gold);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:2px}
+.step-content{}
+.step-title{font-size:12px;color:var(--text);margin-bottom:4px}
+.step-desc{font-size:11px;color:var(--muted);line-height:1.6}
+.step-desc a{color:var(--blue);text-decoration:none}
+.step-desc a:hover{text-decoration:underline}
+.step-desc code{background:var(--border2);padding:1px 5px;border-radius:3px;font-size:10px;color:var(--gold)}
+
+.assumptions{font-size:10px;color:var(--muted2);text-align:center;padding:14px;border:1px solid var(--border);border-radius:8px;line-height:1.7;font-style:italic;margin-top:20px}
+
+@media(max-width:900px){
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  .main,.header,.nav{padding-left:20px;padding-right:20px}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-brand">Housing Calc</a>
+  <a href="index.html">Calculator</a>
+  <a href="naca.html" class="active">NACA Analyzer</a>
+  <a href="strategy.html">Strategy</a>
+</nav>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="eyebrow">NACA Mortgage Program · Eligibility & Buydown Analysis</div>
+    <h1 class="title">NACA Analyzer</h1>
+    <p class="subtitle">Determine Priority vs Non-Priority status · Calculate max loan · Model rate buydowns</p>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- INPUTS -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">👤 Household Income</div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Annual Gross Income (W-2 / paystub)</span><span class="slider-val" id="v-gross">$90,000</span></div>
+        <input type="range" id="s-gross" min="30000" max="200000" step="1000" value="90000" oninput="update()"/>
+        <div class="slider-hint">Use the total gross before any deductions</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Pre-Tax Healthcare Deduction / yr</span><span class="slider-val" id="v-health">$5,400</span></div>
+        <input type="range" id="s-health" min="0" max="20000" step="100" value="5400" oninput="update()"/>
+        <div class="slider-hint">Family plan ~$5,400–$14,400/yr · NACA may exclude this</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">NACA Area Median Income (AMI)</span><span class="slider-val" id="v-ami">$83,500</span></div>
+        <input type="range" id="s-ami" min="40000" max="150000" step="500" value="83500" oninput="update()"/>
+        <div class="slider-hint">Look up on NACA.com for your target zip code</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🏠 Target Property</div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Target Purchase Price</span><span class="slider-val" id="v-price">$280,000</span></div>
+        <input type="range" id="s-price" min="100000" max="700000" step="5000" value="280000" oninput="update()"/>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Property Tax / Month</span><span class="slider-val" id="v-ptax">$221</span></div>
+        <input type="range" id="s-ptax" min="50" max="2000" step="10" value="221" oninput="update()"/>
+        <div class="slider-hint">Use actual listing tax bill</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Homeowner's Insurance / Month</span><span class="slider-val" id="v-ins">$110</span></div>
+        <input type="range" id="s-ins" min="40" max="400" step="10" value="110" oninput="update()"/>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Cash Available for Buydown</span><span class="slider-val" id="v-cash">$45,000</span></div>
+        <input type="range" id="s-cash" min="0" max="150000" step="1000" value="45000" oninput="update()"/>
+        <div class="slider-hint">Savings minus ~$3,500 prepaids (escrow setup)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRIORITY STATUS BANNER -->
+  <div id="status-wrap">
+    <div class="status-banner" id="status-banner">
+      <div class="status-eyebrow" id="status-eyebrow">—</div>
+      <div class="status-title" id="status-title">—</div>
+      <div class="status-note" id="status-note">—</div>
+    </div>
+  </div>
+
+  <!-- PAYMENT BREAKDOWN -->
+  <div class="grid-3">
+    <div class="result-card">
+      <div class="result-header">NACA Rate — No Buydown</div>
+      <div class="section-label">Monthly Payment</div>
+      <div class="line"><span class="line-key">NACA rate</span><span class="line-val gold" id="nb-rate">—</span></div>
+      <div class="line"><span class="line-key">P&I payment</span><span class="line-val neg" id="nb-pi">—</span></div>
+      <div class="line"><span class="line-key">Property tax</span><span class="line-val neg" id="nb-ptax">—</span></div>
+      <div class="line"><span class="line-key">Insurance</span><span class="line-val neg" id="nb-ins">—</span></div>
+      <div class="line"><span class="line-key">PMI</span><span class="line-val pos">$0 — NACA no PMI</span></div>
+      <div class="line total"><span class="line-key">Total PITI</span><span class="line-val gold" id="nb-piti">—</span></div>
+      <div class="section-label">Income Check</div>
+      <div class="line"><span class="line-key">% of gross income</span><span class="line-val" id="nb-pct">—</span></div>
+      <div class="line"><span class="line-key">NACA DTI guideline</span><span class="line-val">≤ 31% preferred</span></div>
+      <div class="line"><span class="line-key">Verdict</span><span class="line-val" id="nb-verdict">—</span></div>
+    </div>
+
+    <div class="result-card">
+      <div class="result-header">NACA Rate — Buyer Buydown Only</div>
+      <div class="section-label">Buydown Cost</div>
+      <div class="line"><span class="line-key">Cash available</span><span class="line-val pos" id="bd-cash">—</span></div>
+      <div class="line"><span class="line-key">Max buyer points</span><span class="line-val gold" id="bd-pts">—</span></div>
+      <div class="line"><span class="line-key">Rate reduction</span><span class="line-val pos" id="bd-reduction">—</span></div>
+      <div class="line"><span class="line-key">Effective rate</span><span class="line-val gold" id="bd-rate">—</span></div>
+      <div class="section-label">Monthly Payment</div>
+      <div class="line"><span class="line-key">P&I payment</span><span class="line-val neg" id="bd-pi">—</span></div>
+      <div class="line"><span class="line-key">Monthly savings vs no buydown</span><span class="line-val pos" id="bd-mosave">—</span></div>
+      <div class="line total"><span class="line-key">Total PITI</span><span class="line-val gold" id="bd-piti">—</span></div>
+      <div class="section-label">Income Check</div>
+      <div class="line"><span class="line-key">% of gross income</span><span class="line-val" id="bd-pct">—</span></div>
+      <div class="line"><span class="line-key">Breakeven</span><span class="line-val" id="bd-breakeven">—</span></div>
+      <div class="line"><span class="line-key">Lifetime net savings</span><span class="line-val pos" id="bd-lifetime">—</span></div>
+    </div>
+
+    <div class="result-card">
+      <div class="result-header">NACA Rate — Max 5-Point Buydown</div>
+      <div class="section-label">Buydown Cost</div>
+      <div class="line"><span class="line-key">Total 5-point cost</span><span class="line-val neg" id="max-cost">—</span></div>
+      <div class="line"><span class="line-key">Buyer contribution</span><span class="line-val neg" id="max-buyer">—</span></div>
+      <div class="line"><span class="line-key">Seller needed</span><span class="line-val warn" id="max-seller">—</span></div>
+      <div class="line"><span class="line-key">Effective rate</span><span class="line-val gold" id="max-rate">—</span></div>
+      <div class="section-label">Monthly Payment</div>
+      <div class="line"><span class="line-key">P&I payment</span><span class="line-val neg" id="max-pi">—</span></div>
+      <div class="line"><span class="line-key">Monthly savings vs no buydown</span><span class="line-val pos" id="max-mosave">—</span></div>
+      <div class="line total"><span class="line-key">Total PITI</span><span class="line-val gold" id="max-piti">—</span></div>
+      <div class="section-label">Income Check</div>
+      <div class="line"><span class="line-key">% of gross income</span><span class="line-val" id="max-pct">—</span></div>
+      <div class="line"><span class="line-key">Breakeven</span><span class="line-val" id="max-breakeven">—</span></div>
+      <div class="line"><span class="line-key">Lifetime net savings</span><span class="line-val pos" id="max-lifetime">—</span></div>
+    </div>
+  </div>
+
+  <!-- BUYDOWN TABLE -->
+  <div class="result-card" style="margin-bottom:20px">
+    <div class="result-header">Full Buydown Ladder — Rate vs Payment vs Cost</div>
+    <table class="buydown-table" id="buydown-table">
+      <thead>
+        <tr>
+          <th>Rate</th>
+          <th>Points</th>
+          <th>Buydown Cost</th>
+          <th>P&I / mo</th>
+          <th>PITI / mo</th>
+          <th>% Gross</th>
+          <th>Mo. Savings</th>
+          <th>Breakeven</th>
+          <th>Lifetime Net</th>
+        </tr>
+      </thead>
+      <tbody id="buydown-body"></tbody>
+    </table>
+  </div>
+
+  <!-- MAX LOAN PANEL -->
+  <div class="result-card" style="margin-bottom:20px">
+    <div class="result-header">Maximum Affordable Loan — at current inputs</div>
+    <div class="grid-4" style="padding:16px 18px;margin-bottom:0">
+      <div>
+        <div style="font-size:9px;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">No Buydown · 31% DTI</div>
+        <div style="font-family:var(--serif);font-size:22px;color:var(--text)" id="ml-nb31">—</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px" id="ml-nb31-piti">—</div>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">No Buydown · 36% DTI</div>
+        <div style="font-family:var(--serif);font-size:22px;color:var(--text)" id="ml-nb36">—</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px" id="ml-nb36-piti">—</div>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Max Buydown · 31% DTI</div>
+        <div style="font-family:var(--serif);font-size:22px;color:var(--green)" id="ml-bd31">—</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px" id="ml-bd31-piti">—</div>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Max Buydown · 36% DTI</div>
+        <div style="font-family:var(--serif);font-size:22px;color:var(--green)" id="ml-bd36">—</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px" id="ml-bd36-piti">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENSUS TRACT INSTRUCTIONS -->
+  <div class="census-panel">
+    <div class="census-title">📍 How to Check Census Tract Eligibility for Any Address</div>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-title">Go to the FFIEC Geocoder</div>
+        <div class="step-desc">Visit <a href="https://ffiec.cfpb.gov/tools/rate-spread" target="_blank">ffiec.gov/geocode</a> — this is the official federal tool NACA uses to determine census tract income levels.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-title">Enter the property address</div>
+        <div class="step-desc">Type in the full street address of the home you're evaluating. Use the current year's HMDA file when prompted.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-title">Find the tract income level (6th field)</div>
+        <div class="step-desc">Look for <code>Tract Income Level</code> in the results. It will say one of: <code>Low</code>, <code>Moderate</code>, <code>Middle</code>, or <code>Upper</code>. Low and Moderate are Priority Areas — Non-Priority members can buy here. Middle and Upper require Priority membership.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-title">Cross-reference with your Priority status</div>
+        <div class="step-desc">If you are a <strong style="color:var(--green)">Priority member</strong> (income below AMI) — you can buy anywhere, no tract check needed. If you are a <strong style="color:var(--orange)">Non-Priority member</strong> — you need the tract to show Low or Moderate. Middle or Upper tracts are not eligible for you.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-title">Verify AMI threshold with NACA directly</div>
+        <div class="step-desc">The AMI number on the NACA website is updated periodically. Before making any decisions, confirm your current AMI threshold at <a href="https://naca.com" target="_blank">naca.com</a> by entering the target zip code. The number shown there is what NACA will use — not Census or HUD published figures.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="assumptions">
+    Assumptions · NACA rates: 5.25% Priority · 6.25% Non-Priority (30-year fixed) · No down payment required · No PMI · No origination fees · Closing costs paid by lender · Prepaids (escrow setup) ~$3,500 required at closing · Buydown: 4 points per 1% rate reduction · 1 point = 1% of loan amount · Maximum combined buyer+seller buydown: 5 points · Priority status: gross income vs HUD AMI for target zip code — verify on NACA.com · Census tract eligibility: Non-Priority members restricted to Low/Moderate income tracts per FFIEC geocoder · Educational tool — not financial advice · Verify all figures with a NACA counselor before making decisions
+  </div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => n.toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:0,maximumFractionDigits:0});
+const fmtPct = n => n.toFixed(1)+'%';
+
+function pi(loan, rate) {
+  if(rate === 0) return loan/360;
+  const r = rate/100/12;
+  return loan*(r*Math.pow(1+r,360))/(Math.pow(1+r,360)-1);
+}
+
+function maxLoan(rate, maxPITI, ptax, ins) {
+  const maxPI = maxPITI - ptax - ins;
+  if(maxPI <= 0) return 0;
+  if(rate === 0) return maxPI * 360;
+  const r = rate/100/12;
+  return maxPI*(1-Math.pow(1+r,-360))/r;
+}
+
+function verdictColor(pct) {
+  if(pct <= 31) return 'pos';
+  if(pct <= 36) return 'warn';
+  return 'neg';
+}
+function verdictText(pct) {
+  if(pct <= 28) return '✅ Comfortable';
+  if(pct <= 31) return '✅ Within guideline';
+  if(pct <= 36) return '⚠️ Tight — NACA may allow';
+  if(pct <= 43) return '🔴 Strained — difficult approval';
+  return '❌ Likely denial';
+}
+
+const SLIDERS = ['s-gross','s-health','s-ami','s-price','s-ptax','s-ins','s-cash'];
+
+function saveSliders(){
+  const vals = {};
+  SLIDERS.forEach(id => { vals[id] = $(id).value; });
+  try { localStorage.setItem('housing-naca-v1', JSON.stringify(vals)); } catch(e){}
+}
+function loadSliders(){
+  try {
+    const saved = localStorage.getItem('housing-naca-v1');
+    if(!saved) return;
+    const vals = JSON.parse(saved);
+    SLIDERS.forEach(id => { if(vals[id] !== undefined && $(id)) $(id).value = vals[id]; });
+  } catch(e){}
+}
+
+function update(){
+  const gross   = +$('s-gross').value;
+  const health  = +$('s-health').value;
+  const ami     = +$('s-ami').value;
+  const price   = +$('s-price').value;
+  const ptax    = +$('s-ptax').value;
+  const ins     = +$('s-ins').value;
+  const cash    = +$('s-cash').value;
+  const prepaids = 3500;
+  const cashBuydown = Math.max(0, cash - prepaids);
+
+  // Slider displays
+  $('v-gross').textContent  = fmt(gross);
+  $('v-health').textContent = fmt(health)+'/yr';
+  $('v-ami').textContent    = fmt(ami);
+  $('v-price').textContent  = fmt(price);
+  $('v-ptax').textContent   = fmt(ptax)+'/mo';
+  $('v-ins').textContent    = fmt(ins)+'/mo';
+  $('v-cash').textContent   = fmt(cash);
+
+  // Priority determination
+  const effectiveIncome = gross - health;
+  const isPriority = effectiveIncome <= ami;
+  const isBorderline = !isPriority && effectiveIncome <= ami * 1.05;
+  const nacaRate = isPriority ? 5.25 : 6.25;
+  const grossMo = gross / 12;
+
+  const wrap = $('status-wrap');
+  wrap.className = isPriority ? 'priority' : (isBorderline ? 'borderline' : 'nonpriority');
+  $('status-eyebrow').textContent = isPriority ? 'PRIORITY MEMBER' : (isBorderline ? 'BORDERLINE — VERIFY WITH NACA' : 'NON-PRIORITY MEMBER');
+
+  if(isPriority){
+    $('status-title').textContent = '✅ Priority Member — 5.25% Rate · No Area Restriction';
+    $('status-note').textContent = `Your effective income (${fmt(effectiveIncome)}) is ${fmt(ami - effectiveIncome)} below the ${fmt(ami)} AMI threshold. You qualify as a Priority member — you can buy in any census tract and receive the 5.25% rate.`;
+  } else if(isBorderline){
+    $('status-title').textContent = '⚠️ Borderline — Within 5% of Priority Threshold';
+    $('status-note').textContent = `Your effective income (${fmt(effectiveIncome)}) is ${fmt(effectiveIncome - ami)} above the ${fmt(ami)} AMI threshold — but only by ${((effectiveIncome/ami-1)*100).toFixed(1)}%. Verify with a NACA counselor exactly how they calculate income for your situation. Healthcare deductions or other pre-tax items may bring you into Priority range. You'll receive the Non-Priority rate of 6.25% unless confirmed otherwise.`;
+  } else {
+    $('status-title').textContent = '⚡ Non-Priority Member — 6.25% Rate · Census Tract Restricted';
+    $('status-note').textContent = `Your effective income (${fmt(effectiveIncome)}) exceeds the ${fmt(ami)} AMI threshold by ${fmt(effectiveIncome - ami)}. You are a Non-Priority member — you can still use all NACA benefits but must buy in a Low or Moderate income census tract. Check any target address using the FFIEC geocoder instructions below.`;
+  }
+
+  // NO BUYDOWN
+  const piNB = pi(price, nacaRate);
+  const pitiNB = piNB + ptax + ins;
+  const pctNB = pitiNB / grossMo * 100;
+  $('nb-rate').textContent   = nacaRate+'% ('+(isPriority?'Priority':'Non-Priority')+')';
+  $('nb-pi').textContent     = '−'+fmt(piNB)+'/mo';
+  $('nb-ptax').textContent   = '−'+fmt(ptax)+'/mo';
+  $('nb-ins').textContent    = '−'+fmt(ins)+'/mo';
+  $('nb-piti').textContent   = fmt(pitiNB)+'/mo';
+  $('nb-pct').textContent    = fmtPct(pctNB)+' of gross';
+  $('nb-pct').className      = 'line-val '+verdictColor(pctNB);
+  $('nb-verdict').textContent= verdictText(pctNB);
+  $('nb-verdict').className  = 'line-val '+verdictColor(pctNB);
+
+  // BUYER BUYDOWN
+  const maxBuyerPts = Math.min(cashBuydown / price * 100, 5);
+  const buyerReduction = maxBuyerPts * 0.25;
+  const bdRate = Math.max(nacaRate - buyerReduction, 0.125);
+  const piBD = pi(price, bdRate);
+  const pitiBD = piBD + ptax + ins;
+  const pctBD = pitiBD / grossMo * 100;
+  const bdCost = price * maxBuyerPts / 100;
+  const bdMoSave = piNB - piBD;
+  const bdBreakeven = bdMoSave > 0 ? bdCost / bdMoSave : Infinity;
+  const bdLifetime = bdMoSave * 360 - bdCost;
+
+  $('bd-cash').textContent      = fmt(cashBuydown)+' after prepaids';
+  $('bd-pts').textContent       = maxBuyerPts.toFixed(2)+' pts ('+fmtPct(maxBuyerPts)+' of loan)';
+  $('bd-reduction').textContent = '−'+buyerReduction.toFixed(3)+'%';
+  $('bd-rate').textContent      = bdRate.toFixed(3)+'%';
+  $('bd-pi').textContent        = '−'+fmt(piBD)+'/mo';
+  $('bd-mosave').textContent    = '+'+fmt(bdMoSave)+'/mo';
+  $('bd-piti').textContent      = fmt(pitiBD)+'/mo';
+  $('bd-pct').textContent       = fmtPct(pctBD)+' of gross';
+  $('bd-pct').className         = 'line-val '+verdictColor(pctBD);
+  $('bd-breakeven').textContent = isFinite(bdBreakeven) ? Math.ceil(bdBreakeven)+' mo ('+( bdBreakeven/12).toFixed(1)+' yrs)' : 'N/A';
+  $('bd-lifetime').textContent  = '+'+fmt(bdLifetime);
+
+  // MAX 5-POINT BUYDOWN
+  const maxPts = 5;
+  const maxRate = Math.max(nacaRate - maxPts * 0.25, 0.125);
+  const maxCostTotal = price * maxPts / 100;
+  const maxBuyerAmt = Math.min(cashBuydown, maxCostTotal);
+  const maxSellerAmt = Math.max(0, maxCostTotal - maxBuyerAmt);
+  const piMax = pi(price, maxRate);
+  const pitiMax = piMax + ptax + ins;
+  const pctMax = pitiMax / grossMo * 100;
+  const maxMoSave = piNB - piMax;
+  const maxBreakeven = maxMoSave > 0 ? maxCostTotal / maxMoSave : Infinity;
+  const maxLifetime = maxMoSave * 360 - maxCostTotal;
+
+  $('max-cost').textContent     = '−'+fmt(maxCostTotal)+' total';
+  $('max-buyer').textContent    = '−'+fmt(maxBuyerAmt)+' (your cash)';
+  $('max-seller').textContent   = maxSellerAmt > 0 ? fmt(maxSellerAmt)+' seller contribution needed' : '✅ Fully covered by your cash';
+  $('max-seller').className     = 'line-val '+(maxSellerAmt > 0 ? 'warn' : 'pos');
+  $('max-rate').textContent     = maxRate.toFixed(3)+'%';
+  $('max-pi').textContent       = '−'+fmt(piMax)+'/mo';
+  $('max-mosave').textContent   = '+'+fmt(maxMoSave)+'/mo';
+  $('max-piti').textContent     = fmt(pitiMax)+'/mo';
+  $('max-pct').textContent      = fmtPct(pctMax)+' of gross';
+  $('max-pct').className        = 'line-val '+verdictColor(pctMax);
+  $('max-breakeven').textContent= isFinite(maxBreakeven) ? Math.ceil(maxBreakeven)+' mo ('+(maxBreakeven/12).toFixed(1)+' yrs)' : 'N/A';
+  $('max-lifetime').textContent = '+'+fmt(maxLifetime);
+
+  // BUYDOWN TABLE
+  const tbody = $('buydown-body');
+  tbody.innerHTML = '';
+  const steps = [];
+  for(let pts=0; pts<=5; pts+=0.5) steps.push(pts);
+  steps.forEach(pts => {
+    const reduction = pts * 0.25;
+    const r = Math.max(nacaRate - reduction, 0.125);
+    const cost = price * pts / 100;
+    const piVal = pi(price, r);
+    const pitiVal = piVal + ptax + ins;
+    const pct = pitiVal / grossMo * 100;
+    const moSave = piNB - piVal;
+    const be = moSave > 0 && pts > 0 ? Math.ceil(cost/moSave) : 0;
+    const lifetime = moSave * 360 - cost;
+    const isCurrent = Math.abs(pts - maxBuyerPts) < 0.26;
+    const isMax = pts === 5;
+    const tr = document.createElement('tr');
+    if(isCurrent) tr.className = 'highlight';
+    tr.innerHTML = `
+      <td class="${isMax?'gold':isCurrent?'gold':''}">${r.toFixed(3)}%${pts===0?' ← base':isMax?' ← max':isCurrent?' ← your cash':''}</td>
+      <td class="num">${pts.toFixed(1)}</td>
+      <td class="num">${pts>0?'−'+fmt(cost):'—'}</td>
+      <td class="num">−${fmt(piVal)}</td>
+      <td class="num ${pct<=31?'green':pct<=36?'gold':''}">−${fmt(pitiVal)}</td>
+      <td class="num ${pct<=31?'green':pct<=36?'gold':''}">${fmtPct(pct)}</td>
+      <td class="num green">${pts>0?'+'+fmt(moSave):'—'}</td>
+      <td class="num">${be>0?be+' mo':'—'}</td>
+      <td class="num green">${pts>0?'+'+fmt(lifetime):'—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // MAX LOAN PANEL
+  const ptaxPct = ptax / price; // use as fraction for iteration
+  function calcMaxLoan(rate, dtiPct) {
+    const maxPITI = grossMo * dtiPct;
+    let loan = 300000;
+    for(let i=0;i<60;i++){
+      const taxMo = loan * ptaxPct;
+      const maxPI = maxPITI - taxMo - ins;
+      if(maxPI <= 0){ loan = 0; break; }
+      const r = rate/100/12;
+      loan = rate === 0 ? maxPI*360 : maxPI*(1-Math.pow(1+r,-360))/r;
+    }
+    return Math.max(0, loan);
+  }
+
+  const ml = {
+    nb31: calcMaxLoan(nacaRate, 0.31),
+    nb36: calcMaxLoan(nacaRate, 0.36),
+    bd31: calcMaxLoan(maxRate, 0.31),
+    bd36: calcMaxLoan(maxRate, 0.36),
+  };
+  Object.entries(ml).forEach(([key, loan]) => {
+    const rate = key.startsWith('nb') ? nacaRate : maxRate;
+    const dti = key.endsWith('31') ? 0.31 : 0.36;
+    const taxMo = loan * ptaxPct;
+    const piVal = pi(loan, rate);
+    const pitiVal = piVal + taxMo + ins;
+    $('ml-'+key).textContent = fmt(loan);
+    $('ml-'+key+'-piti').textContent = fmt(pitiVal)+'/mo · '+(pitiVal/grossMo*100).toFixed(1)+'% gross';
+  });
+
+  saveSliders();
+}
+
+loadSliders();
+update();
+</script>
+</body>
+</html>
