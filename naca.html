@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>NACA Analyzer · Housing Calc</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0c0f;--surface:#13151a;--border:#1e2229;--border2:#262b34;
+  --text:#c9d4e0;--muted:#4a5568;--muted2:#2d3748;
+  --gold:#c9a84c;--gold-dim:#3d2e10;
+  --green:#4caf82;--green-dim:#1a3d2e;
+  --red:#d05a5a;--red-dim:#3d1a1a;
+  --blue:#6b9fd4;--blue-dim:#1a2d3d;
+  --orange:#d4924c;--orange-dim:#3d2410;
+  --purple:#a78bfa;--purple-dim:#2d1f4a;
+  --mono:'DM Mono',monospace;--serif:'Cormorant Garamond',serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:100vh}
+input[type=range]{width:100%;accent-color:var(--gold);cursor:pointer}
+
+/* NAV */
+.nav{background:#0f1117;border-bottom:1px solid var(--border2);padding:0 40px;display:flex;align-items:center;gap:4px;height:48px}
+.nav-brand{font-family:var(--serif);font-size:18px;color:var(--gold);margin-right:20px;text-decoration:none}
+.nav a{font-size:11px;color:var(--muted);text-decoration:none;padding:6px 14px;border-radius:6px;letter-spacing:.05em;transition:color .15s,background .15s}
+.nav a:hover{color:var(--text);background:var(--surface)}
+.nav a.active{color:var(--gold);background:var(--gold-dim)}
+
+.header{background:linear-gradient(180deg,#0f1117 0%,var(--bg) 100%);border-bottom:1px solid var(--border2);padding:32px 40px 24px}
+.header-inner{max-width:1200px;margin:0 auto}
+.eyebrow{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.title{font-family:var(--serif);font-size:38px;font-weight:700;color:#e8dcc8;letter-spacing:-.01em;line-height:1.1}
+.subtitle{font-size:12px;color:var(--muted);margin-top:6px;font-style:italic}
+
+.main{max-width:1200px;margin:0 auto;padding:32px 40px}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px}
+.card-title{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+
+.slider-row{margin-bottom:16px}
+.slider-label-row{display:flex;justify-content:space-between;margin-bottom:4px;align-items:baseline}
+.slider-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.slider-val{font-size:12px;font-weight:500;color:var(--gold)}
+.slider-hint{font-size:10px;color:var(--muted2);margin-top:2px;font-style:italic}
+
+/* STATUS BANNER */
+.status-banner{border-radius:12px;padding:20px 28px;margin-bottom:20px;border:1px solid transparent}
+.status-eyebrow{font-size:9px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:6px}
+.status-title{font-family:var(--serif);font-size:32px;font-weight:700;margin-bottom:4px}
+.status-note{font-size:11px;line-height:1.6}
+
+.priority .status-banner{background:linear-gradient(135deg,var(--green-dim),rgba(0,0,0,0));border-color:#4caf8244}
+.priority .status-eyebrow{color:var(--green)}
+.priority .status-title{color:#7cca9f}
+.nonpriority .status-banner{background:linear-gradient(135deg,var(--orange-dim),rgba(0,0,0,0));border-color:#d4924c44}
+.nonpriority .status-eyebrow{color:var(--orange)}
+.nonpriority .status-title{color:#e0a870}
+.borderline .status-banner{background:linear-gradient(135deg,var(--gold-dim),rgba(0,0,0,0));border-color:#c9a84c44}
+.borderline .status-eyebrow{color:var(--gold)}
+.borderline .status-title{color:var(--gold)}
+
+/* RESULT CARDS */
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px}
+.result-header{padding:14px 18px;border-bottom:1px solid var(--border);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted2)}
+.line{display:flex;justify-content:space-between;align-items:baseline;padding:5px 18px}
+.line-key{font-size:11px;color:var(--muted);flex:1}
+.line-val{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap}
+.line-val.neg{color:var(--red)}
+.line-val.pos{color:var(--green)}
+.line-val.gold{color:var(--gold)}
+.line-val.warn{color:var(--orange)}
+.line.total{background:rgba(255,255,255,.03);border-top:1px solid var(--border);padding:10px 18px;margin-top:4px}
+.line.total .line-key{font-size:11px;color:var(--text);font-weight:500}
+.line.total .line-val{font-size:14px;font-weight:700}
+.section-label{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted2);padding:12px 18px 6px;border-top:1px solid var(--border)}
+.section-label:first-child{border-top:none}
+
+/* BUYDOWN TABLE */
+.buydown-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:4px}
+.buydown-table th{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2);padding:8px 18px;text-align:left;border-bottom:1px solid var(--border)}
+.buydown-table td{padding:7px 18px;border-bottom:1px solid var(--border);color:var(--muted)}
+.buydown-table tr:last-child td{border-bottom:none}
+.buydown-table tr.highlight td{color:var(--text);background:rgba(201,168,76,.04)}
+.buydown-table .num{text-align:right;color:var(--text)}
+.buydown-table .green{color:var(--green)}
+.buydown-table .gold{color:var(--gold)}
+
+/* CENSUS PANEL */
+.census-panel{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:22px 26px;margin-bottom:20px}
+.census-title{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+.step{display:flex;gap:16px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.step:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--gold-dim);border:1px solid var(--gold);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:2px}
+.step-content{}
+.step-title{font-size:12px;color:var(--text);margin-bottom:4px}
+.step-desc{font-size:11px;color:var(--muted);line-height:1.6}
+.step-desc a{color:var(--blue);text-decoration:none}
+.step-desc a:hover{text-decoration:underline}
+.step-desc code{background:var(--border2);padding:1px 5px;border-radius:3px;font-size:10px;color:var(--gold)}
+
+.assumptions{font-size:10px;color:var(--muted2);text-align:center;padding:14px;border:1px solid var(--border);border-radius:8px;line-height:1.7;font-style:italic;margin-top:20px}
+
+@media(max-width:900px){
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  .main,.header,.nav{padding-left:20px;padding-right:20px}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-brand">Housing Calc</a>
+  <a href="index.html">Calculator</a>
+  <a href="naca.html" class="active">NACA Analyzer</a>
+  <a href="lenders.html">Lenders</a>
+  <a href="strategy.html">Strategy</a>
+  <a href="retirement.html">Retirement</a>
+</nav>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="eyebrow">NACA Mortgage Program · Eligibility & Buydown Analysis</div>
+    <h1 class="title">NACA Analyzer</h1>
+    <p class="subtitle">Determine Priority vs Non-Priority status · Calculate max loan · Model rate buydowns</p>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- INPUTS -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">👤 Household Income</div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Annual Gross Income (W-2 / paystub)</span><span class="slider-val" id="v-gross">$90,000</span></div>
+        <input type="range" id="s-gross" min="30000" max="200000" step="1000" value="90000" oninput="update()"/>
+        <div class="slider-hint">Use the total gross before any deductions</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Pre-Tax Healthcare Deduction / yr</span><span class="slider-val" id="v-health">$5,400</span></div>
+        <input type="range" id="s-health" min="0" max="20000" step="100" value="5400" oninput="update()"/>
+        <div class="slider-hint">Family plan ~$5,400–$14,400/yr · NACA may exclude this</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">NACA Area Median Income (AMI)</span><span class="slider-val" id="v-ami">$83,500</span></div>
+        <input type="range" id="s-ami" min="40000" max="150000" step="500" value="83500" oninput="update()"/>
+        <div class="slider-hint">Look up on NACA.com for your target zip code</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🏠 Target Property</div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Target Purchase Price</span><span class="slider-val" id="v-price">$280,000</span></div>
+        <input type="range" id="s-price" min="100000" max="700000" step="5000" value="280000" oninput="update()"/>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Property Tax / Month</span><span class="slider-val" id="v-ptax">$221</span></div>
+        <input type="range" id="s-ptax" min="50" max="2000" step="10" value="221" oninput="update()"/>
+        <div class="slider-hint">Use actual listing tax bill</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Homeowner's Insurance / Month</span><span class="slider-val" id="v-ins">$110</span></div>
+        <input type="range" id="s-ins" min="40" max="400" step="10" value="110" oninput="update()"/>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Cash Available for Buydown</span><span class="slider-val" id="v-cash">$45,000</span></div>
+        <input type="range" id="s-cash" min="0" max="150000" step="1000" value="45000" oninput="update()"/>
+        <div class="slider-hint">Savings minus ~$3,500 prepaids (escrow setup)</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Years Before Selling</span><span class="slider-val" id="v-hold">5 years</span></div>
+        <input type="range" id="s-hold" min="1" max="15" step="1" value="5" oninput="update()"/>
+        <div class="slider-hint">How long you plan to own before selling</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label-row"><span class="slider-label">Annual Home Appreciation</span><span class="slider-val" id="v-appr">3.0%</span></div>
+        <input type="range" id="s-appr" min="0" max="8" step="0.5" value="3" oninput="update()"/>
+        <div class="slider-hint">Expected yearly home value growth</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRIORITY STATUS BANNER -->
+  <div id="status-wrap">
+    <div class="status-banner" id="status-banner">
+      <div class="status-eyebrow" id="status-eyebrow">—</div>
+      <div class="status-title" id="status-title">—</div>
+      <div class="status-note" id="status-note">—</div>
+    </div>
+  </div>
+
+  <!-- YOUR MONEY BREAKDOWN -->
+  <div class="result-card" style="margin-bottom:20px" id="money-breakdown">
+    <div class="result-header">💵 Where Your Cash Goes — NACA Has No Down Payment</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:4px 0">
+      <div class="line" style="flex-direction:column;align-items:flex-start;padding:10px 18px;border-right:1px solid var(--border)">
+        <div class="line-key" style="margin-bottom:4px">Total savings</div>
+        <div class="line-val pos" id="mb-savings">—</div>
+      </div>
+      <div class="line" style="flex-direction:column;align-items:flex-start;padding:10px 18px;border-right:1px solid var(--border)">
+        <div class="line-key" style="margin-bottom:4px">Prepaids at closing</div>
+        <div class="line-val neg" id="mb-prepaids">−$3,500</div>
+        <div style="font-size:10px;color:var(--muted2);margin-top:2px">escrow setup · required</div>
+      </div>
+      <div class="line" style="flex-direction:column;align-items:flex-start;padding:10px 18px;border-right:1px solid var(--border)">
+        <div class="line-key" style="margin-bottom:4px">Available for buydown</div>
+        <div class="line-val gold" id="mb-available">—</div>
+        <div style="font-size:10px;color:var(--muted2);margin-top:2px" id="mb-pts-can-afford">—</div>
+      </div>
+      <div class="line" style="flex-direction:column;align-items:flex-start;padding:10px 18px">
+        <div class="line-key" style="margin-bottom:4px">Cash reserve after closing</div>
+        <div class="line-val" id="mb-reserve">—</div>
+        <div style="font-size:10px;color:var(--muted2);margin-top:2px" id="mb-reserve-note">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TWO SCENARIO CARDS -->
+  <div class="grid-2" style="margin-bottom:20px">
+    <div class="result-card">
+      <div class="result-header">Scenario A — No Buydown (base rate)</div>
+      <div class="section-label">Rate & Payment</div>
+      <div class="line"><span class="line-key">NACA rate</span><span class="line-val gold" id="nb-rate">—</span></div>
+      <div class="line"><span class="line-key">Down payment</span><span class="line-val pos">$0 — NACA requires none</span></div>
+      <div class="line"><span class="line-key">PMI</span><span class="line-val pos">$0 — NACA has no PMI</span></div>
+      <div class="line"><span class="line-key">P&I payment</span><span class="line-val neg" id="nb-pi">—</span></div>
+      <div class="line"><span class="line-key">Property tax</span><span class="line-val neg" id="nb-ptax">—</span></div>
+      <div class="line"><span class="line-key">Insurance</span><span class="line-val neg" id="nb-ins">—</span></div>
+      <div class="line total"><span class="line-key">Total PITI / month</span><span class="line-val gold" id="nb-piti">—</span></div>
+      <div class="section-label">Approval Check</div>
+      <div class="line"><span class="line-key">% of gross income</span><span class="line-val" id="nb-pct">—</span></div>
+      <div class="line"><span class="line-key">Verdict</span><span class="line-val" id="nb-verdict">—</span></div>
+    </div>
+
+    <div class="result-card">
+      <div class="result-header">Scenario B — With Your Cash Buydown</div>
+      <div class="section-label">What You're Buying</div>
+      <div class="line"><span class="line-key">Points you can afford</span><span class="line-val gold" id="bd-pts">—</span></div>
+      <div class="line"><span class="line-key">Cost of your buydown</span><span class="line-val neg" id="bd-cost">—</span></div>
+      <div class="line"><span class="line-key">Rate reduction</span><span class="line-val pos" id="bd-reduction">—</span></div>
+      <div class="line"><span class="line-key">Effective rate</span><span class="line-val gold" id="bd-rate">—</span></div>
+      <div class="line"><span class="line-key">Seller pts to reach combined max</span><span class="line-val" id="bd-seller-needed">—</span></div>
+      <div class="line"><span class="line-key">Bank match (Priority only)</span><span class="line-val" id="bd-bankmatch">—</span></div>
+      <div class="section-label">Rate & Payment</div>
+      <div class="line"><span class="line-key">P&I payment</span><span class="line-val neg" id="bd-pi">—</span></div>
+      <div class="line"><span class="line-key">Monthly savings vs Scenario A</span><span class="line-val pos" id="bd-mosave">—</span></div>
+      <div class="line total"><span class="line-key">Total PITI / month</span><span class="line-val gold" id="bd-piti">—</span></div>
+      <div class="section-label">Payoff & Value</div>
+      <div class="line"><span class="line-key">% of gross income</span><span class="line-val" id="bd-pct">—</span></div>
+      <div class="line"><span class="line-key">Breakeven on buydown cost</span><span class="line-val" id="bd-breakeven">—</span></div>
+      <div class="line"><span class="line-key">30-year net savings</span><span class="line-val pos" id="bd-lifetime">—</span></div>
+    </div>
+  </div>
+
+
+
+  <!-- BUYDOWN vs PRINCIPAL REDUCTION AT SALE -->
+  <div class="result-card" style="margin-bottom:20px" id="sale-comparison">
+    <div class="result-header">📅 Buydown vs. Principal Reduction — Net Position at Sale</div>
+    <div style="font-size:10px;color:var(--muted);padding:10px 18px 0;line-height:1.6">
+      Both paths spend the same cash. Buydown lowers your rate (cheaper monthly payments). Principal reduction lowers your loan balance (more equity at closing). The winner depends on how long you stay.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border);margin-top:10px">
+      <!-- BUYDOWN PATH -->
+      <div style="border-right:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:.15em;text-transform:uppercase;padding:10px 18px 6px;color:var(--gold)">Path A — Rate Buydown</div>
+        <div class="line"><span class="line-key">Cash spent</span><span class="line-val neg" id="sc-bd-spent">—</span></div>
+        <div class="line"><span class="line-key">Rate achieved</span><span class="line-val gold" id="sc-bd-rate">—</span></div>
+        <div class="line"><span class="line-key">Monthly P&I</span><span class="line-val" id="sc-bd-pi">—</span></div>
+        <div class="line"><span class="line-key">Loan balance at sale</span><span class="line-val neg" id="sc-bd-bal">—</span></div>
+        <div class="line"><span class="line-key">Sale price (<span id="sc-bd-yr">—</span> yr)</span><span class="line-val pos" id="sc-bd-sale">—</span></div>
+        <div class="line"><span class="line-key">Net proceeds after realtor</span><span class="line-val" id="sc-bd-net">—</span></div>
+        <div class="line"><span class="line-key">Monthly savings invested</span><span class="line-val pos" id="sc-bd-invested">—</span></div>
+        <div class="line total"><span class="line-key">Total net position</span><span class="line-val" id="sc-bd-total">—</span></div>
+      </div>
+      <!-- PRINCIPAL REDUCTION PATH -->
+      <div>
+        <div style="font-size:9px;letter-spacing:.15em;text-transform:uppercase;padding:10px 18px 6px;color:var(--blue)">Path B — Principal Reduction</div>
+        <div class="line"><span class="line-key">Cash spent</span><span class="line-val neg" id="sc-pr-spent">—</span></div>
+        <div class="line"><span class="line-key">Rate (no buydown)</span><span class="line-val" id="sc-pr-rate">—</span></div>
+        <div class="line"><span class="line-key">Monthly P&I</span><span class="line-val" id="sc-pr-pi">—</span></div>
+        <div class="line"><span class="line-key">Loan balance at sale</span><span class="line-val neg" id="sc-pr-bal">—</span></div>
+        <div class="line"><span class="line-key">Sale price (<span id="sc-pr-yr">—</span> yr)</span><span class="line-val pos" id="sc-pr-sale">—</span></div>
+        <div class="line"><span class="line-key">Net proceeds after realtor</span><span class="line-val" id="sc-pr-net">—</span></div>
+        <div class="line"><span class="line-key">Monthly savings invested</span><span class="line-val pos" id="sc-pr-invested">—</span></div>
+        <div class="line total"><span class="line-key">Total net position</span><span class="line-val" id="sc-pr-total">—</span></div>
+      </div>
+    </div>
+    <div id="sc-winner" style="padding:14px 18px;border-top:1px solid var(--border);font-size:12px;font-weight:500;margin-top:4px">—</div>
+    <div style="font-size:10px;color:var(--muted2);padding:4px 18px 12px;line-height:1.6">Monthly savings assumed invested at 4% annually · Selling costs: 6% realtor + $1,500 · Same cash deployed in both paths</div>
+  </div>
+
+  <!-- MAX HOME PRICE PANEL -->
+  <div class="result-card" style="margin-bottom:20px">
+    <div class="result-header">🏠 Maximum Home Price — NACA 31% Guideline (effective income after pre-tax deductions)</div>
+    <div style="font-size:10px;color:var(--orange);padding:10px 18px 0;line-height:1.6">
+      ⚠️ NACA uses <strong>31% of effective income</strong> as their housing ratio guideline. The conventional 36% total-debt ratio does <strong>not</strong> apply — NACA has its own qualification model. For NACA, <strong>loan amount = home price</strong> (no down payment), so max loan is your max price.
+    </div>
+    <div class="grid-4" style="padding:16px 18px;margin-bottom:0">
+      <div>
+        <div style="font-size:9px;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Base Rate · 28% DTI (comfortable)</div>
+        <div style="font-family:var(--serif);font-size:22px;color:var(--text)" id="ml-nb28">—</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px" id="ml-nb28-piti">—</div>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Base Rate · 31% DTI ← NACA guideline</div>
+        <div style="font-family:var(--serif);font-size:22px;color:var(--gold)" id="ml-nb31">—</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px" id="ml-nb31-piti">—</div>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px" id="ml-bd28-label">Max Buydown · 28% DTI</div>
+        <div style="font-family:var(--serif);font-size:22px;color:var(--green)" id="ml-bd28">—</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px" id="ml-bd28-piti">—</div>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px" id="ml-bd31-label">Max Buydown · 31% DTI ← NACA guideline</div>
+        <div style="font-family:var(--serif);font-size:22px;color:var(--green)" id="ml-bd31">—</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px" id="ml-bd31-piti">—</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);padding:10px 18px 14px;border-top:1px solid var(--border);margin-top:8px" id="ml-buydown-note">—</div>
+  </div>
+
+  <!-- CENSUS TRACT INSTRUCTIONS -->
+  <div class="census-panel">
+    <div class="census-title">📍 How to Check Census Tract Eligibility for Any Address</div>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-title">Go to the FFIEC Geocoder</div>
+        <div class="step-desc">Visit <a href="https://ffiec.cfpb.gov/tools/rate-spread" target="_blank">ffiec.gov/geocode</a> — this is the official federal tool NACA uses to determine census tract income levels.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-title">Enter the property address</div>
+        <div class="step-desc">Type in the full street address of the home you're evaluating. Use the current year's HMDA file when prompted.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-title">Find the tract income level (6th field)</div>
+        <div class="step-desc">Look for <code>Tract Income Level</code> in the results. It will say one of: <code>Low</code>, <code>Moderate</code>, <code>Middle</code>, or <code>Upper</code>. Low and Moderate are Priority Areas — Non-Priority members can buy here. Middle and Upper require Priority membership.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-title">Cross-reference with your Priority status</div>
+        <div class="step-desc">If you are a <strong style="color:var(--green)">Priority member</strong> (income below AMI) — you can buy anywhere, no tract check needed. If you are a <strong style="color:var(--orange)">Non-Priority member</strong> — you need the tract to show Low or Moderate. Middle or Upper tracts are not eligible for you.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-title">Verify AMI threshold with NACA directly</div>
+        <div class="step-desc">The AMI number on the NACA website is updated periodically. Before making any decisions, confirm your current AMI threshold at <a href="https://naca.com" target="_blank">naca.com</a> by entering the target zip code. The number shown there is what NACA will use — not Census or HUD published figures.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="assumptions">
+    Assumptions · NACA rates: 5.25% Priority · 6.25% Non-Priority (30-year fixed) · No down payment required · No PMI · No origination fees · Closing costs paid by lender · Prepaids (escrow setup) ~$3,500 required at closing · DTI ratios use effective income (gross minus pre-tax deductions) per NACA qualification methodology · 36% DTI is a conventional lending standard and does NOT apply to NACA — NACA's guideline is 31% of effective income · Buydown: 1 point = 1% of loan amount → −0.25% rate (30-yr) · Priority members: buyer max 7 pts, seller max 10 pts (separate pools) · Non-Priority members: all sources combined max 5 pts (HOEPA) · Bank match: Priority members who max 7 buyer pts get dollar-for-dollar lender match on additional principal contributions · Minimum rate: 0.125% · Priority status: effective income vs HUD AMI for target zip code — verify on NACA.com · Census tract eligibility: Non-Priority members restricted to Low/Moderate income tracts per FFIEC geocoder · Educational tool — not financial advice · Verify all figures with a NACA counselor before making decisions
+  </div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => n.toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:0,maximumFractionDigits:0});
+const fmtPct = n => n.toFixed(1)+'%';
+
+function pi(loan, rate) {
+  if(rate === 0) return loan/360;
+  const r = rate/100/12;
+  return loan*(r*Math.pow(1+r,360))/(Math.pow(1+r,360)-1);
+}
+
+// Remaining loan balance after `months` payments
+function loanBal(principal, annualRate, months) {
+  if(principal <= 0) return 0;
+  const r = annualRate/100/12;
+  if(r === 0) return Math.max(0, principal - (principal/360)*months);
+  const piMo = pi(principal, annualRate);
+  return principal*Math.pow(1+r,months) - piMo*(Math.pow(1+r,months)-1)/r;
+}
+
+// Future value of level monthly payment stream at monthly yield
+function fvAnnuity(payment, monthlyYield, months) {
+  if(monthlyYield === 0) return payment * months;
+  return payment * (Math.pow(1+monthlyYield, months) - 1) / monthlyYield;
+}
+
+function maxLoan(rate, maxPITI, ptax, ins) {
+  const maxPI = maxPITI - ptax - ins;
+  if(maxPI <= 0) return 0;
+  if(rate === 0) return maxPI * 360;
+  const r = rate/100/12;
+  return maxPI*(1-Math.pow(1+r,-360))/r;
+}
+
+function verdictColor(pct) {
+  if(pct <= 31) return 'pos';
+  if(pct <= 36) return 'warn';
+  return 'neg';
+}
+function verdictText(pct) {
+  if(pct <= 28) return '✅ Comfortable — well within guideline';
+  if(pct <= 31) return '✅ Within NACA guideline';
+  if(pct <= 36) return '⚠️ Above 31% — NACA counselor approval needed';
+  return '❌ Above 36% — likely denial';
+}
+
+const SLIDERS = ['s-gross','s-health','s-ami','s-price','s-ptax','s-ins','s-cash','s-hold','s-appr'];
+
+function saveSliders(){
+  const vals = {};
+  SLIDERS.forEach(id => { vals[id] = $(id).value; });
+  try { localStorage.setItem('housing-naca-v1', JSON.stringify(vals)); } catch(e){}
+}
+function loadSliders(){
+  try {
+    const saved = localStorage.getItem('housing-naca-v1');
+    if(!saved) return;
+    const vals = JSON.parse(saved);
+    SLIDERS.forEach(id => { if(vals[id] !== undefined && $(id)) $(id).value = vals[id]; });
+  } catch(e){}
+}
+
+function update(){
+  const gross    = +$('s-gross').value;
+  const health   = +$('s-health').value;
+  const ami      = +$('s-ami').value;
+  const price    = +$('s-price').value;
+  const ptax     = +$('s-ptax').value;
+  const ins      = +$('s-ins').value;
+  const cash     = +$('s-cash').value;
+  const holdYrs  = +$('s-hold').value;
+  const apprRate = +$('s-appr').value;
+  const prepaids = 3500;
+  const cashBuydown = Math.max(0, cash - prepaids);
+
+  // Slider displays
+  $('v-gross').textContent  = fmt(gross);
+  $('v-health').textContent = fmt(health)+'/yr';
+  $('v-ami').textContent    = fmt(ami);
+  $('v-price').textContent  = fmt(price);
+  $('v-ptax').textContent   = fmt(ptax)+'/mo';
+  $('v-ins').textContent    = fmt(ins)+'/mo';
+  $('v-cash').textContent   = fmt(cash);
+  $('v-hold').textContent   = holdYrs === 1 ? '1 year' : holdYrs+' years';
+  $('v-appr').textContent   = apprRate.toFixed(1)+'%';
+
+  // Priority determination
+  const effectiveIncome = gross - health;
+  const isPriority  = effectiveIncome <= ami;
+  const isBorderline = !isPriority && effectiveIncome <= ami * 1.05;
+  const nacaRate = isPriority ? 5.25 : 6.25;
+  // NACA qualifies DTI against effective income (gross minus pre-tax deductions)
+  const effectiveMo = effectiveIncome / 12;
+
+  const wrap = $('status-wrap');
+  wrap.className = isPriority ? 'priority' : (isBorderline ? 'borderline' : 'nonpriority');
+  $('status-eyebrow').textContent = isPriority ? 'PRIORITY MEMBER' : (isBorderline ? 'BORDERLINE — VERIFY WITH NACA' : 'NON-PRIORITY MEMBER');
+  if(isPriority){
+    $('status-title').textContent = '✅ Priority Member — 5.25% Rate · No Area Restriction';
+    $('status-note').textContent = `Your effective income (${fmt(effectiveIncome)}) is ${fmt(ami - effectiveIncome)} below the ${fmt(ami)} AMI threshold. You qualify as Priority — buy in any census tract at the 5.25% rate.`;
+  } else if(isBorderline){
+    $('status-title').textContent = '⚠️ Borderline — Within 5% of Priority Threshold';
+    $('status-note').textContent = `Your effective income (${fmt(effectiveIncome)}) is only ${fmt(effectiveIncome - ami)} above the ${fmt(ami)} AMI threshold. Verify with a NACA counselor — healthcare deductions or other pre-tax items may bring you into Priority range.`;
+  } else {
+    $('status-title').textContent = '⚡ Non-Priority Member — 6.25% Rate · Census Tract Restricted';
+    $('status-note').textContent = `Your effective income (${fmt(effectiveIncome)}) exceeds the ${fmt(ami)} AMI threshold by ${fmt(effectiveIncome - ami)}. You must buy in a Low or Moderate income census tract (check any address using the FFIEC geocoder below).`;
+  }
+
+  // ── MONEY BREAKDOWN ──
+  // 1 point = 1% of loan amount → −0.25% rate (30-yr). Half-point resolution.
+  // Priority members: buyer max 7 pts, seller max 10 pts (SEPARATE pools — total up to 17 pts).
+  // Non-Priority members: ALL sources combined capped at 5 pts by HOEPA.
+  const costPerPoint  = price * 0.01;
+  const buyerMaxPts   = isPriority ? 7 : 5;
+  const sellerMaxPts  = isPriority ? 10 : 0; // non-priority: combined cap handled below
+  const combinedMaxPts = isPriority ? 17 : 5;
+
+  const buyerPtsExact = Math.min(cashBuydown / costPerPoint, buyerMaxPts);
+  const buyerPtsWhole = Math.floor(buyerPtsExact * 2) / 2; // round down to nearest 0.5
+  const buyerCost     = buyerPtsWhole * costPerPoint;
+  const reserveAfter  = cashBuydown - buyerCost;
+
+  $('mb-savings').textContent     = fmt(cash);
+  $('mb-available').textContent   = fmt(cashBuydown);
+  $('mb-pts-can-afford').textContent = `covers ${buyerPtsWhole.toFixed(1)} of ${buyerMaxPts} buyer pts max`;
+  $('mb-reserve').textContent     = fmt(reserveAfter);
+  $('mb-reserve-note').textContent= reserveAfter < 5000 ? '⚠️ low — consider keeping more' : '✅ solid reserve';
+  $('mb-reserve').className       = 'line-val ' + (reserveAfter < 5000 ? 'warn' : 'pos');
+
+  // ── SCENARIO A — NO BUYDOWN ──
+  const piNB   = pi(price, nacaRate);
+  const pitiNB = piNB + ptax + ins;
+  const pctNB  = pitiNB / effectiveMo * 100;
+  $('nb-rate').textContent    = nacaRate+'% ('+(isPriority?'Priority':'Non-Priority')+')';
+  $('nb-pi').textContent      = '−'+fmt(piNB)+'/mo';
+  $('nb-ptax').textContent    = '−'+fmt(ptax)+'/mo';
+  $('nb-ins').textContent     = '−'+fmt(ins)+'/mo';
+  $('nb-piti').textContent    = fmt(pitiNB)+'/mo';
+  $('nb-pct').textContent     = fmtPct(pctNB)+' of effective income';
+  $('nb-pct').className       = 'line-val '+verdictColor(pctNB);
+  $('nb-verdict').textContent = verdictText(pctNB);
+  $('nb-verdict').className   = 'line-val '+verdictColor(pctNB);
+
+  // ── SCENARIO B — WITH YOUR CASH BUYDOWN ──
+  const bdReduction  = buyerPtsWhole * 0.25;
+  const bdRate       = Math.max(nacaRate - bdReduction, 0.125);
+  const piBD         = pi(price, bdRate);
+  const pitiBD       = piBD + ptax + ins;
+  const pctBD        = pitiBD / effectiveMo * 100;
+  const bdMoSave     = piNB - piBD;
+  const bdBreakeven  = bdMoSave > 0 && buyerCost > 0 ? buyerCost / bdMoSave : Infinity;
+  const bdLifetime   = bdMoSave * 360 - buyerCost;
+
+  // Seller pts available (non-priority: remaining within 5-pt combined cap)
+  const sellerAvail = isPriority ? sellerMaxPts : Math.max(0, 5 - buyerPtsWhole);
+  const ptsToMax    = Math.max(0, combinedMaxPts - buyerPtsWhole);
+  const sellerPtsNeeded = Math.min(ptsToMax, sellerAvail);
+  const sellerCost  = sellerPtsNeeded * costPerPoint;
+
+  $('bd-pts').textContent       = buyerPtsWhole.toFixed(1)+' pts — costs '+fmt(buyerCost);
+  $('bd-cost').textContent      = buyerCost > 0 ? '−'+fmt(buyerCost)+' (from your savings)' : '$0 — no buydown with current cash';
+  $('bd-reduction').textContent = bdReduction > 0 ? '−'+bdReduction.toFixed(2)+'% off base rate' : 'none';
+  $('bd-rate').textContent      = bdRate.toFixed(3)+'%';
+
+  if(isPriority){
+    $('bd-seller-needed').textContent = sellerPtsNeeded > 0
+      ? sellerPtsNeeded.toFixed(1)+' pts ('+fmt(sellerCost)+') — seller pool is separate, max 10 pts'
+      : '✅ buyer max 7 pts reached — seller can still add up to 10 pts independently';
+    $('bd-seller-needed').className = 'line-val '+(sellerPtsNeeded > 0 ? 'warn' : 'pos');
+  } else {
+    const remainingCombined = Math.max(0, 5 - buyerPtsWhole);
+    $('bd-seller-needed').textContent = remainingCombined > 0
+      ? remainingCombined.toFixed(1)+' pts ('+fmt(remainingCombined*costPerPoint)+') max from seller — non-priority: 5 pts combined cap (all sources)'
+      : '⚠️ combined 5-pt HOEPA cap reached for non-priority';
+    $('bd-seller-needed').className = 'line-val warn';
+  }
+
+  // Bank match: Priority members who max 7 pts get dollar-for-dollar lender match on additional principal contributions
+  if(isPriority && buyerPtsWhole >= buyerMaxPts){
+    $('bd-bankmatch').textContent = '✅ Eligible — 7 pts maxed. Extra cash → principal reduction; bank matches dollar-for-dollar for further rate drop.';
+    $('bd-bankmatch').className   = 'line-val pos';
+  } else if(isPriority){
+    const needed = (buyerMaxPts - buyerPtsWhole);
+    $('bd-bankmatch').textContent = `Max ${needed} more pts (${fmt(needed*costPerPoint)}) to unlock bank match`;
+    $('bd-bankmatch').className   = 'line-val warn';
+  } else {
+    $('bd-bankmatch').textContent = 'Non-priority — bank match not available';
+    $('bd-bankmatch').className   = 'line-val';
+  }
+
+  $('bd-pi').textContent       = '−'+fmt(piBD)+'/mo';
+  $('bd-mosave').textContent   = bdMoSave > 0 ? '+'+fmt(bdMoSave)+'/mo' : '$0';
+  $('bd-piti').textContent     = fmt(pitiBD)+'/mo';
+  $('bd-pct').textContent      = fmtPct(pctBD)+' of effective income';
+  $('bd-pct').className        = 'line-val '+verdictColor(pctBD);
+  $('bd-breakeven').textContent= isFinite(bdBreakeven) && bdBreakeven > 0
+    ? Math.ceil(bdBreakeven)+' months ('+(bdBreakeven/12).toFixed(1)+' years)' : 'N/A';
+  $('bd-lifetime').textContent = bdLifetime > 0 ? '+'+fmt(bdLifetime) : fmt(bdLifetime);
+
+  // ── MAX LOAN PANEL ──
+  const ptaxPct = ptax / price;
+  function calcMaxLoan(rate, dtiPct) {
+    const maxPITI = effectiveMo * dtiPct;
+    let loan = 300000;
+    for(let i=0;i<60;i++){
+      const taxMo = loan * ptaxPct;
+      const maxPI = maxPITI - taxMo - ins;
+      if(maxPI <= 0){ loan = 0; break; }
+      const r = rate/100/12;
+      loan = rate === 0 ? maxPI*360 : maxPI*(1-Math.pow(1+r,-360))/r;
+    }
+    return Math.max(0, loan);
+  }
+  // Max achievable rate = base rate minus full combined buydown (buyer + seller caps)
+  const maxRateForLoan = Math.max(nacaRate - combinedMaxPts * 0.25, 0.125);
+  const ml = {
+    nb28: calcMaxLoan(nacaRate, 0.28),
+    nb31: calcMaxLoan(nacaRate, 0.31),
+    bd28: calcMaxLoan(maxRateForLoan, 0.28),
+    bd31: calcMaxLoan(maxRateForLoan, 0.31),
+  };
+  Object.entries(ml).forEach(([key, loan]) => {
+    const rate    = key.startsWith('nb') ? nacaRate : maxRateForLoan;
+    const taxMo   = loan * ptaxPct;
+    const piVal   = pi(loan, rate);
+    const pitiVal = piVal + taxMo + ins;
+    $('ml-'+key).textContent         = fmt(loan);
+    $('ml-'+key+'-piti').textContent = fmt(pitiVal)+'/mo · '+(pitiVal/effectiveMo*100).toFixed(1)+'% eff. income';
+  });
+
+  // Dynamic column labels for max buydown
+  const bdLabel = isPriority
+    ? `Max 17-pt Buydown (7 buyer + 10 seller)`
+    : `Max 5-pt Buydown (all sources combined)`;
+  $('ml-bd28-label').textContent = bdLabel+' · 28% DTI';
+  $('ml-bd31-label').textContent = bdLabel+' · 31% DTI ← NACA guideline';
+
+  // Buydown note
+  const buyerMaxCost = buyerMaxPts * costPerPoint;
+  if(isPriority){
+    $('ml-buydown-note').textContent = buyerCost >= buyerMaxCost
+      ? `✅ Your cash covers your full 7-pt buyer maximum (${fmt(buyerMaxCost)}). Seller can contribute up to 10 more pts (${fmt(sellerMaxPts*costPerPoint)}) — negotiate this in your offer. Combined max: rate → ${maxRateForLoan.toFixed(3)}%.`
+      : `Buyer max: 7 pts = ${fmt(buyerMaxCost)}. You have ${buyerPtsWhole} pts (${fmt(buyerCost)}). Seller contributes up to 10 pts (${fmt(sellerMaxPts*costPerPoint)}) in a separate pool — negotiate in your offer.`;
+  } else {
+    $('ml-buydown-note').textContent = `Non-priority: HOEPA caps ALL sources at 5 pts combined (${fmt(5*costPerPoint)}). Buyer: ${buyerPtsWhole} pts, seller: up to ${Math.max(0,5-buyerPtsWhole)} remaining pts. Max achievable rate: ${maxRateForLoan.toFixed(3)}%.`;
+  }
+
+  // ── BUYDOWN vs PRINCIPAL REDUCTION AT SALE ──
+  // Both paths deploy the same cash (buyerCost). Compare net position at holdYrs.
+  const holdMonths  = holdYrs * 12;
+  const salePrice   = price * Math.pow(1 + apprRate/100, holdYrs);
+  const realtorCost = salePrice * 0.06 + 1500;
+  const savYield    = 0.04/12; // 4% annual savings yield on monthly surplus
+
+  // Path A: Buydown — loan = price at bdRate, lower monthly payment
+  const piA    = pi(price, bdRate);
+  const balA   = loanBal(price, bdRate, holdMonths);
+  const netA   = salePrice - balA - realtorCost;
+
+  // Path B: Principal Reduction — loan = price - buyerCost at nacaRate
+  const prLoan = Math.max(0, price - buyerCost);
+  const piB    = pi(prLoan, nacaRate);
+  const balB   = loanBal(prLoan, nacaRate, holdMonths);
+  const netB   = salePrice - balB - realtorCost;
+
+  // Monthly payment delta — whichever path pays less gets that surplus invested
+  const delta  = piA - piB; // positive = Path B cheaper per month, negative = Path A cheaper
+  const moSurplusA = delta > 0 ? 0 : -delta; // Path A monthly surplus (when buydown wins monthly)
+  const moSurplusB = delta > 0 ?  delta : 0; // Path B monthly surplus (when principal wins monthly)
+  const fvA    = fvAnnuity(moSurplusA, savYield, holdMonths);
+  const fvB    = fvAnnuity(moSurplusB, savYield, holdMonths);
+
+  const totalA = netA + fvA;
+  const totalB = netB + fvB;
+  const aWins  = totalA >= totalB;
+  const margin = Math.abs(totalA - totalB);
+
+  // Populate panel
+  ['bd','pr'].forEach(id => {
+    $(`sc-${id}-yr`).textContent  = holdYrs;
+    $(`sc-${id}-sale`).textContent= '+'+fmt(salePrice);
+  });
+  $('sc-bd-spent').textContent    = buyerCost > 0 ? '−'+fmt(buyerCost) : '$0 — no buydown';
+  $('sc-bd-rate').textContent     = bdRate.toFixed(3)+'%';
+  $('sc-bd-pi').textContent       = fmt(piA)+'/mo';
+  $('sc-bd-bal').textContent      = '−'+fmt(Math.max(0,balA));
+  $('sc-bd-net').textContent      = netA >= 0 ? '+'+fmt(netA) : '−'+fmt(-netA);
+  $('sc-bd-net').className        = 'line-val '+(netA >= 0 ? 'pos' : 'neg');
+  $('sc-bd-invested').textContent = fvA > 0 ? '+'+fmt(fvA)+' ('+fmt(moSurplusA)+'/mo)' : '—';
+  $('sc-bd-total').textContent    = fmt(totalA);
+  $('sc-bd-total').className      = 'line-val '+(aWins ? 'gold' : '');
+  $('sc-bd-total').style.fontSize = '15px';
+
+  $('sc-pr-spent').textContent    = buyerCost > 0 ? '−'+fmt(buyerCost)+' off loan' : '$0 — no cash';
+  $('sc-pr-rate').textContent     = nacaRate+'% (base)';
+  $('sc-pr-pi').textContent       = fmt(piB)+'/mo';
+  $('sc-pr-bal').textContent      = '−'+fmt(Math.max(0,balB));
+  $('sc-pr-net').textContent      = netB >= 0 ? '+'+fmt(netB) : '−'+fmt(-netB);
+  $('sc-pr-net').className        = 'line-val '+(netB >= 0 ? 'pos' : 'neg');
+  $('sc-pr-invested').textContent = fvB > 0 ? '+'+fmt(fvB)+' ('+fmt(moSurplusB)+'/mo)' : '—';
+  $('sc-pr-total').textContent    = fmt(totalB);
+  $('sc-pr-total').className      = 'line-val '+(!aWins ? 'gold' : '');
+  $('sc-pr-total').style.fontSize = '15px';
+
+  const winEl = $('sc-winner');
+  if(buyerCost === 0){
+    winEl.style.cssText = 'padding:14px 18px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)';
+    winEl.textContent   = 'No cash available for buydown or principal reduction — adjust Cash Available slider.';
+  } else if(aWins){
+    // Find actual month buydown overtakes principal reduction
+    let crossover = null;
+    for(let mo=1; mo<=360; mo++){
+      const sp = price * Math.pow(1 + apprRate/100, mo/12);
+      const rc = sp * 0.06 + 1500;
+      const bA = loanBal(price, bdRate, mo);
+      const bB = loanBal(prLoan, nacaRate, mo);
+      const surpA = Math.max(0, -(piA - piB));
+      const surpB = Math.max(0, piA - piB);
+      const tA = (sp - bA - rc) + fvAnnuity(surpA, savYield, mo);
+      const tB = (sp - bB - rc) + fvAnnuity(surpB, savYield, mo);
+      if(tA >= tB){ crossover = mo; break; }
+    }
+    winEl.style.cssText = 'padding:14px 18px;border-top:1px solid var(--border);font-size:12px;font-weight:500;background:rgba(201,168,76,.06);color:var(--gold)';
+    winEl.textContent   = `✅ Buydown wins at ${holdYrs} year${holdYrs===1?'':'s'} by ${fmt(margin)}${crossover ? ` — buydown overtakes principal reduction around month ${crossover} (~yr ${(crossover/12).toFixed(1)})` : ''}.`;
+  } else {
+    winEl.style.cssText = 'padding:14px 18px;border-top:1px solid var(--border);font-size:12px;font-weight:500;background:rgba(107,159,212,.06);color:var(--blue)';
+    winEl.textContent   = `✅ Principal reduction wins at ${holdYrs} year${holdYrs===1?'':'s'} by ${fmt(margin)} — you sell before the buydown pays off. The lower loan balance returns more at sale than the rate savings accumulate.`;
+  }
+
+  saveSliders();
+}
+
+loadSliders();
+update();
+</script>
+</body>
+</html>
